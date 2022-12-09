@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -29,6 +29,7 @@ library
       Day.Day06
       Day.Day07
       Day.Day08
+      Day.Day09
       Day.Day10
       Day.Day11
       Day.DayTemplate
