@@ -10,6 +10,10 @@ import Day.Day05StateLens qualified
 import Day.Day06 qualified
 import Day.Day07 qualified
 import Day.Day08 qualified
+import Day.Day09 qualified
+import Day.Day10 qualified
+import Day.Day11 qualified
+import Day.Day12 qualified
 
 import Data.Map (Map)
 import Data.Map qualified as Map
@@ -35,4 +39,5 @@ solutions =
     , "10" =: Day.Day10.run
     , "11" =: Day.Day11.run
     , "09" =: Day.Day09.run
+    , "12" =: Day.Day12.run
     ]
