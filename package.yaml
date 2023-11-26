@@ -5,8 +5,7 @@ version: 0.1.0.0
 homepage: https://github.com/githubuser/aoc2023#readme
 license: BSD3
 author: Morten Kolstad
-maintainer: example@example.com
-copyright: 2021 Morten Kolstad
+copyright: 2023 Morten Kolstad
 category: Web
 extra-source-files:
   - README.md

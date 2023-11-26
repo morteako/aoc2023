@@ -26,7 +26,7 @@ cmdParser =
     (options <**> helper)
     ( fullDesc
         <> progDesc ("Run a advent of code challenge. Default is to run the last implemented challenge and fetch the corresponding input")
-        <> header "aoc2022 - haskell solutions for advent of code 2022"
+        <> header "aoc2023 - haskell solutions for advent of code 2022"
     )
 
 options :: Parser Options
