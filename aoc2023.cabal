@@ -1,0 +1,126 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           aoc2023
+version:        0.1.0.0
+category:       Web
+homepage:       https://github.com/githubuser/aoc2023#readme
+author:         Morten Kolstad
+maintainer:     Morten Kolstad
+copyright:      2023 Morten Kolstad
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+library
+  exposed-modules:
+      Day.DayTemplate
+      DayVersion
+      Letter
+      Solutions
+      Utils
+  hs-source-dirs:
+      src/lib
+  default-extensions:
+      BinaryLiterals
+      DerivingVia
+      ExistentialQuantification
+      ExplicitForAll
+      FieldSelectors
+      MultiWayIf
+      NamedWildCards
+      OverloadedStrings
+      PartialTypeSignatures
+      ViewPatterns
+      LambdaCase
+      PatternSynonyms
+  ghc-options: -fno-warn-partial-type-signatures
+  build-depends:
+      HUnit
+    , array
+    , base >=4.14 && <5
+    , bytestring
+    , comonad
+    , containers
+    , digits
+    , extra
+    , fgl
+    , groupBy
+    , haskell-src-meta
+    , lattices
+    , lens
+    , linear
+    , megaparsec
+    , memoize
+    , mtl
+    , ordered-containers
+    , safe
+    , split
+    , stringsearch
+    , template-haskell
+    , text
+    , transformers
+    , unordered-containers
+    , vector
+  default-language: GHC2021
+
+executable app
+  main-is: Main.hs
+  other-modules:
+      CmdArgs
+      Input
+      Paths_aoc2023
+  hs-source-dirs:
+      src/app
+  default-extensions:
+      BinaryLiterals
+      DerivingVia
+      ExistentialQuantification
+      ExplicitForAll
+      FieldSelectors
+      MultiWayIf
+      NamedWildCards
+      OverloadedStrings
+      PartialTypeSignatures
+      ViewPatterns
+      LambdaCase
+      PatternSynonyms
+  ghc-options: -fno-warn-partial-type-signatures
+  build-depends:
+      HUnit
+    , aoc2023
+    , array
+    , base >=4.14 && <5
+    , bytestring
+    , comonad
+    , containers
+    , digits
+    , dotenv
+    , extra
+    , fgl
+    , groupBy
+    , haskell-src-meta
+    , http-conduit
+    , lattices
+    , lens
+    , linear
+    , megaparsec
+    , memoize
+    , mtl
+    , optparse-applicative
+    , ordered-containers
+    , safe
+    , split
+    , stringsearch
+    , template-haskell
+    , text
+    , timeit
+    , transformers
+    , unordered-containers
+    , vector
+  default-language: GHC2021
