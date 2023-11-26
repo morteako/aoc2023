@@ -1,26 +1,5 @@
 module Solutions where
 
-import Day.Day01 qualified
-import Day.Day02 qualified
-import Day.Day03 qualified
-import Day.Day03Monoid qualified
-import Day.Day04 qualified
-import Day.Day05 qualified
-import Day.Day05StateLens qualified
-import Day.Day06 qualified
-import Day.Day07 qualified
-import Day.Day08 qualified
-import Day.Day09 qualified
-import Day.Day10 qualified
-import Day.Day11 qualified
-import Day.Day12 qualified
-import Day.Day13 qualified
-import Day.Day14 qualified
-import Day.Day20 qualified
-import Day.Day21 qualified
-import Day.Day23 qualified
-import Day.Day25 qualified
-
 import Data.Map (Map)
 import Data.Map qualified as Map
 import Day.Day09 qualified
@@ -53,3 +32,4 @@ solutions =
     , "23" =: Day.Day23.run
     , "25" =: Day.Day25.run
     ]
+    []

@@ -19,27 +19,6 @@ extra-source-files:
 
 library
   exposed-modules:
-      Day.Day01
-      Day.Day02
-      Day.Day03
-      Day.Day03Monoid
-      Day.Day04
-      Day.Day05
-      Day.Day05StateLens
-      Day.Day06
-      Day.Day07
-      Day.Day08
-      Day.Day09
-      Day.Day10
-      Day.Day11
-      Day.Day12
-      Day.Day13
-      Day.Day13TH
-      Day.Day14
-      Day.Day20
-      Day.Day21
-      Day.Day23
-      Day.Day25
       Day.DayTemplate
       DayVersion
       Letter
@@ -48,55 +27,15 @@ library
   hs-source-dirs:
       src/lib
   default-extensions:
-      BangPatterns
       BinaryLiterals
-      ConstrainedClassMethods
-      ConstraintKinds
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingVia
-      DoAndIfThenElse
-      EmptyCase
-      EmptyDataDecls
-      EmptyDataDeriving
       ExistentialQuantification
       ExplicitForAll
-      FlexibleContexts
-      FlexibleInstances
-      ForeignFunctionInterface
-      GADTSyntax
-      GeneralisedNewtypeDeriving
-      HexFloatLiterals
-      ImplicitPrelude
-      ImportQualifiedPost
-      InstanceSigs
-      KindSignatures
-      MonomorphismRestriction
-      MultiParamTypeClasses
+      FieldSelectors
       MultiWayIf
-      NamedFieldPuns
       NamedWildCards
-      NumericUnderscores
       OverloadedStrings
       PartialTypeSignatures
-      PatternGuards
-      PolyKinds
-      PostfixOperators
-      RankNTypes
-      RelaxedPolyRec
-      ScopedTypeVariables
-      StandaloneDeriving
-      StandaloneKindSignatures
-      StarIsType
-      TraditionalRecordSyntax
-      TupleSections
-      TypeApplications
-      TypeOperators
-      TypeSynonymInstances
       ViewPatterns
       LambdaCase
       PatternSynonyms
@@ -128,7 +67,7 @@ library
     , transformers
     , unordered-containers
     , vector
-  default-language: Haskell2010
+  default-language: GHC2021
 
 executable app
   main-is: Main.hs
@@ -139,55 +78,15 @@ executable app
   hs-source-dirs:
       src/app
   default-extensions:
-      BangPatterns
       BinaryLiterals
-      ConstrainedClassMethods
-      ConstraintKinds
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingVia
-      DoAndIfThenElse
-      EmptyCase
-      EmptyDataDecls
-      EmptyDataDeriving
       ExistentialQuantification
       ExplicitForAll
-      FlexibleContexts
-      FlexibleInstances
-      ForeignFunctionInterface
-      GADTSyntax
-      GeneralisedNewtypeDeriving
-      HexFloatLiterals
-      ImplicitPrelude
-      ImportQualifiedPost
-      InstanceSigs
-      KindSignatures
-      MonomorphismRestriction
-      MultiParamTypeClasses
+      FieldSelectors
       MultiWayIf
-      NamedFieldPuns
       NamedWildCards
-      NumericUnderscores
       OverloadedStrings
       PartialTypeSignatures
-      PatternGuards
-      PolyKinds
-      PostfixOperators
-      RankNTypes
-      RelaxedPolyRec
-      ScopedTypeVariables
-      StandaloneDeriving
-      StandaloneKindSignatures
-      StarIsType
-      TraditionalRecordSyntax
-      TupleSections
-      TypeApplications
-      TypeOperators
-      TypeSynonymInstances
       ViewPatterns
       LambdaCase
       PatternSynonyms
@@ -224,4 +123,4 @@ executable app
     , transformers
     , unordered-containers
     , vector
-  default-language: Haskell2010
+  default-language: GHC2021

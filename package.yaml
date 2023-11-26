@@ -1,72 +1,31 @@
-name:                aoc2022
-version:             0.1.0.0
+name: aoc2023
+version: 0.1.0.0
 #synopsis:
 #description:
-homepage:            https://github.com/githubuser/aoc2022#readme
-license:             BSD3
-author:              Morten Kolstad
-maintainer:          example@example.com
-copyright:           2021 Morten Kolstad
-category:            Web
+homepage: https://github.com/githubuser/aoc2023#readme
+license: BSD3
+author: Morten Kolstad
+maintainer: example@example.com
+copyright: 2021 Morten Kolstad
+category: Web
 extra-source-files:
-- README.md
+  - README.md
+
+language: GHC2021
 
 default-extensions:
-  - BangPatterns
   - BinaryLiterals
-  - ConstrainedClassMethods
-  - ConstraintKinds
-  - DeriveDataTypeable
-  - DeriveFoldable
-  - DeriveFunctor
-  - DeriveGeneric
-  - DeriveLift
-  - DeriveTraversable
   - DerivingVia
-  - DoAndIfThenElse
-  - EmptyCase
-  - EmptyDataDecls
-  - EmptyDataDeriving
   - ExistentialQuantification
   - ExplicitForAll
-  - FlexibleContexts
-  - FlexibleInstances
-  - ForeignFunctionInterface
-  - GADTSyntax
-  - GeneralisedNewtypeDeriving
-  - HexFloatLiterals
-  - ImplicitPrelude
-  - ImportQualifiedPost
-  - InstanceSigs
-  - KindSignatures
-  - MonomorphismRestriction
-  - MultiParamTypeClasses
-  -  MultiWayIf
-  - NamedFieldPuns
+  - FieldSelectors
+  - MultiWayIf
   - NamedWildCards
-  - NumericUnderscores
   - OverloadedStrings
   - PartialTypeSignatures
-  - PatternGuards
-  - PolyKinds
-  - PostfixOperators
-  - RankNTypes
-  - RelaxedPolyRec
-  - ScopedTypeVariables
-  - StandaloneDeriving
-  - StandaloneKindSignatures
-  - StarIsType
-  - TraditionalRecordSyntax
-  - TupleSections
-  - TypeApplications
-  - TypeOperators
-  - TypeSynonymInstances
   - ViewPatterns
   - LambdaCase
   - PatternSynonyms
-
-
-
 
 ghc-options:
   - -fno-warn-partial-type-signatures
@@ -100,17 +59,17 @@ dependencies:
   - lattices
 
 library:
-    source-dirs: src/lib
-    when:
-      - condition: false
-        other-modules: Paths_aoc2022
+  source-dirs: src/lib
+  when:
+    - condition: false
+      other-modules: Paths_aoc2023
 
 executables:
   app:
-    source-dirs:      src/app
-    main:             Main.hs
+    source-dirs: src/app
+    main: Main.hs
     dependencies:
-      - aoc2022
+      - aoc2023
       - timeit
       - http-conduit
       - dotenv
