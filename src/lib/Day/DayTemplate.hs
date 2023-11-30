@@ -1,7 +1,8 @@
 module Day.DayTemplate (run) where
 
+import Control.Monad (void)
 import Test.HUnit ((@=?))
-import Text.RawString.QQ
+import Text.RawString.QQ (r)
 
 parse = id
 
@@ -28,7 +29,7 @@ testInput =
 |]
 
 run :: String -> IO ()
-run input = do
+run input = void $ do
   input <- putStrLn "#####    testInput   #####" >> pure testInput
   print input
   let parsed = parse input
