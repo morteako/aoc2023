@@ -39,6 +39,7 @@ library
       ViewPatterns
       LambdaCase
       PatternSynonyms
+      QuasiQuotes
   ghc-options: -fno-warn-partial-type-signatures
   build-depends:
       HUnit
@@ -59,6 +60,7 @@ library
     , memoize
     , mtl
     , ordered-containers
+    , raw-strings-qq
     , safe
     , split
     , stringsearch
@@ -90,6 +92,7 @@ executable app
       ViewPatterns
       LambdaCase
       PatternSynonyms
+      QuasiQuotes
   ghc-options: -fno-warn-partial-type-signatures
   build-depends:
       HUnit
@@ -114,6 +117,7 @@ executable app
     , mtl
     , optparse-applicative
     , ordered-containers
+    , raw-strings-qq
     , safe
     , split
     , stringsearch

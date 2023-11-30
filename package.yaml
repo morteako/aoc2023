@@ -25,6 +25,7 @@ default-extensions:
   - ViewPatterns
   - LambdaCase
   - PatternSynonyms
+  - QuasiQuotes
 
 ghc-options:
   - -fno-warn-partial-type-signatures
@@ -56,6 +57,7 @@ dependencies:
   - fgl
   - HUnit
   - lattices
+  - raw-strings-qq
 
 library:
   source-dirs: src/lib
