@@ -19,6 +19,7 @@ extra-source-files:
 
 library
   exposed-modules:
+      Day.Day01
       Day.DayTemplate
       DayVersion
       Letter
