@@ -4,6 +4,7 @@ import Data.Map (Map)
 import Data.Map qualified as Map
 import Day.Day01 qualified as Day01
 import Day.Day02 qualified as Day02
+import Day.Day03 qualified as Day03
 import DayVersion
 import Utils ((=:))
 
@@ -12,4 +13,5 @@ solutions =
   Map.fromList
     [ NormalDay 1 =: Day01.run
     , NormalDay 2 =: Day02.run
+    , NormalDay 3 =: Day03.run
     ]
