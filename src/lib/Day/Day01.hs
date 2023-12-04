@@ -7,6 +7,10 @@ import Data.Char (isDigit)
 import Data.Foldable (foldl')
 import Test.HUnit ((@=?))
 
+main = interact $ \inp -> do
+  let nums = read @[Int] $ "[" ++ inp ++ "]"
+  show $ sum $ maximumOn length $ groupBy (<=) nums
+
 parse :: String -> [C.ByteString]
 parse = C.lines . C.pack
 
