@@ -24,7 +24,7 @@ import Text.RawString.QQ (r)
 import Utils (traceLab)
 import Prelude hiding (max, min)
 
-data Mapping = Mapping {destStart :: Int, sourceStart, range :: Int}
+data Mapping = Mapping {destStart, sourceStart, range :: Int}
 
 -- q ::
 -- q = (.destStart)
@@ -58,7 +58,7 @@ mapToFunc m = Func (m.destStart - m.sourceStart) m.sourceStart (m.sourceStart + 
 -- -- unpackFunc (Func adder min max) x | error $ show adder = undefined
 -- unpackFunc (Func adder min max) x | x >= min && x < max = traceLab ("changed:" ++ show x ++ " ," ++ show adder ++ " =>") $ x + adder
 -- unpackFunc (Func adder min max) x = traceLab "unchanged" $ traceShow min $ x
-unpackFuncs = go
+unpackFuncs = go . sortOn (.min)
  where
   go :: [Func] -> (Int -> Int)
   go [] x = x
@@ -86,7 +86,7 @@ revmapToFunc :: Mapping -> Func
 revmapToFunc m = Func (m.sourceStart - m.destStart) m.destStart (m.destStart + m.range)
 
 testInput =
-  [r|seeds: 79 14 55 13
+  [r|seeds: 79 14 55 100
 
 seed-to-soil map:
 50 98 2
