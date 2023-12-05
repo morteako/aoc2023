@@ -59,6 +59,7 @@ dependencies:
   - HUnit
   - lattices
   - raw-strings-qq
+  - IntervalMap
 
 library:
   source-dirs: src/lib

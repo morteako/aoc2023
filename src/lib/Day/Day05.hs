@@ -1,15 +1,22 @@
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE Strict #-}
 {-# LANGUAGE NoFieldSelectors #-}
 
 module Day.Day05 (run) where
 
 import Control.Arrow
 import Control.Monad (void)
+import Data.Function
+import Data.IntSet qualified as Set
+import Data.IntervalMap (Interval (..))
+import Data.IntervalMap.Lazy qualified as IM
+import Data.List
 import Data.List qualified as List
+import Data.List.Extra (firstJust, minimumOn)
 import Data.List.Split (splitOn)
 import Data.Map (Map)
 import Data.Map qualified as Map
+import Data.Semigroup
 import Debug.Trace
 import Safe (readMay)
 import Test.HUnit ((@=?))
@@ -17,7 +24,7 @@ import Text.RawString.QQ (r)
 import Utils (traceLab)
 import Prelude hiding (max, min)
 
-data Mapping = Mapping {typeFrom :: String, typeTo :: String, destStart :: Int, sourceStart, range :: Int}
+data Mapping = Mapping {destStart :: Int, sourceStart, range :: Int}
 
 -- q ::
 -- q = (.destStart)
@@ -26,36 +33,57 @@ data Mapping = Mapping {typeFrom :: String, typeTo :: String, destStart :: Int, 
 --
 
 instance Show Mapping where
-  show (Mapping from to x y z) = from ++ "-" ++ to ++ "   " ++ show x ++ " <= " ++ show y ++ " : " ++ show z
+  show (Mapping x y z) = show x ++ " <= " ++ show y ++ " : " ++ show z
 
+parse :: [Char] -> ([Int], [[Mapping]])
 parse = splitOn "\n\n" >>> map lines >>> parseSeedsAndMaps
  where
-  parseSeedsAndMaps ([seeds] : maps) = (map ("seeds",) $ map (read @Int) (tail $ words seeds), map parseMappings maps)
-  parseMappings (name : lines) = map (toMapping (parseName name) . parseMapping) $ lines
-  parseName (words -> head -> splitOn "-" -> [from, "to", to]) = (from, to)
+  parseSeedsAndMaps ([seeds] : maps) = (map (read @Int) (tail $ words seeds), map parseMappings maps)
+  parseMappings (_name : lines) = map toMapping $ map parseMapping $ lines
+  parseMapping = words >>> map (readInt @Int)
+  toMapping [a, b, c] = Mapping a b c
+  toMapping xs = error $ show xs
 
-  parseMapping = words >>> map (read @Int)
+readInt :: (Read a) => String -> a
+readInt x = case readMay x of
+  Just q -> q
+  Nothing -> error x
 
-  toMapping (from, to) [a, b, c] = Mapping from to a b c
-
--- toMapping xs = error $ show xs
-
-data Func = Func {typeFrom :: String, typeTo :: String, adder :: Int, min :: Int, max :: Int} deriving (Show)
+data Func = Func {adder :: Int, min :: Int, max :: Int} deriving (Show)
 
 mapToFunc :: Mapping -> Func
-mapToFunc m = Func m.typeFrom m.typeTo (m.destStart - m.sourceStart) m.sourceStart (m.sourceStart + m.range)
+mapToFunc m = Func (m.destStart - m.sourceStart) m.sourceStart (m.sourceStart + m.range)
 
-unpackFunc :: Func -> (String, Int) -> (String, Int)
-unpackFunc (Func tfrom tto adder min max) (typ, x)
-  | x >= min && x < max && tfrom == typ = (tto, x + adder)
-unpackFunc _ x = x
-
-solveA (seeds, mappings) = map maps seeds
+-- unpackFunc :: Func -> Int -> Int
+-- -- unpackFunc (Func adder min max) x | error $ show adder = undefined
+-- unpackFunc (Func adder min max) x | x >= min && x < max = traceLab ("changed:" ++ show x ++ " ," ++ show adder ++ " =>") $ x + adder
+-- unpackFunc (Func adder min max) x = traceLab "unchanged" $ traceShow min $ x
+unpackFuncs = go
  where
-  maps = foldr1 (.) $ map unpackFunc $ reverse $ concatMap (map mapToFunc) mappings
+  go :: [Func] -> (Int -> Int)
+  go [] x = x
+  go (Func adder min max : fs) x | x >= min && x < max = x + adder
+  go (_ : fs) x = unpackFuncs fs x
 
-solveB :: a -> a
-solveB = id
+solveA (seeds, mappings) = minimum $ map maps seeds
+ where
+  maps = foldr1 (.) $ map unpackFuncs $ reverse $ map (map mapToFunc) mappings
+
+getAllSeeds :: [Int] -> [Int]
+getAllSeeds (val : range : rest) = take range [val ..] ++ getAllSeeds rest
+getAllSeeds [] = []
+
+solveB (getAllSeeds -> traceLab "seeds" -> id -> seeds, mappings) = firstJust check [0 ..]
+ where
+  check x | mod x 10000 == 0, traceShow x False = undefined
+  check (maps -> x) = if elem x seeds then Just x else Nothing
+  maps = foldr1 (.) $ map unpackFuncs $ map (map revmapToFunc) mappings
+
+-- getOutside :: [[Mapping]] -> _
+-- getOutside mappings = IM.fromList $ map (,()) $ map (\m -> IntervalCO m.sourceStart (m.sourceStart + m.range)) $ concat mappings
+
+revmapToFunc :: Mapping -> Func
+revmapToFunc m = Func (m.sourceStart - m.destStart) m.destStart (m.destStart + m.range)
 
 testInput =
   [r|seeds: 79 14 55 13
@@ -95,18 +123,21 @@ humidity-to-location map:
 
 run :: String -> IO ()
 run input = void $ do
-  input <- putStrLn "#####    testInput   #####" >> pure testInput
+  -- input <- putStrLn "#####    testInput   #####" >> pure testInput
   print input
   let parsed = parse input
-  print parsed
+  -- print parsed
+  -- mapM_ print $ snd parsed
   let resA = solveA parsed
+  print "--------------------------------------------"
   print resA
 
--- let f = Func{adder = 70, min = 18, max = 25}
--- print $ "\n\n" ++ (show $ unpackFunc f $ 53)
--- print $ unpackFunc (mapToFunc $ Mapping 18 25 70) 53
+  -- let f = Func{adder = 70, min = 18, max = 25}
+  -- print $ "\n\n" ++ (show $ unpackFunc f $ 53)
+  -- print $ unpackFunc (mapToFunc $ Mapping 18 25 70) 53
 
--- resA @=? 1715
--- let resB = solveB parsed
--- print resB
+  -- resA @=? 1715
+  let resB = solveB parsed
+  print resB
+
 -- resB @=? 1739

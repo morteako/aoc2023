@@ -54,6 +54,7 @@ library
   ghc-options: -fno-warn-partial-type-signatures
   build-depends:
       HUnit
+    , IntervalMap
     , array
     , base >=4.14 && <5
     , bytestring
@@ -109,6 +110,7 @@ executable app
   ghc-options: -fno-warn-partial-type-signatures
   build-depends:
       HUnit
+    , IntervalMap
     , aoc2023
     , array
     , base >=4.14 && <5
