@@ -23,8 +23,12 @@ library
       Day.Day02
       Day.Day03
       Day.Day04
+<<<<<<< HEAD
       Day.Day06
       Day.Day07
+=======
+      Day.Day05
+>>>>>>> a7af7c7 (hmm)
       Day.DayTemplate
       DayVersion
       Letter
