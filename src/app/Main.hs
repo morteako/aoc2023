@@ -30,21 +30,22 @@ runner o@Options{day, input} = do
               putStrLn $ "Currently implemented : " <> unwords (show <$> Map.keys solutions)
             Just dayRunner ->
               dayRunner i
-  inputFile <- case input of
-    StdIn -> do
-      getContents
-    File path -> do
-      readFile path
-    Test -> do
-      let path = "inputs/" <> "/" <> show lastDayNr <> "test"
-      readFile path
-    DayInput -> do
-      case day of
-        LastDay -> getInput $ getDayNum lastDayNr
-        SpecificDay d -> getInput $ getDayNum d
-  putStr "> "
-  print o
-  timeIt $ func inputFile
+  timeIt $ do
+    inputFile <- case input of
+      StdIn -> do
+        getContents
+      File path -> do
+        readFile path
+      Test -> do
+        let path = "inputs/" <> "/" <> show lastDayNr <> "test"
+        readFile path
+      DayInput -> do
+        case day of
+          LastDay -> getInput $ getDayNum lastDayNr
+          SpecificDay d -> getInput $ getDayNum d
+    putStr "> "
+    print o
+    timeIt $ func inputFile
 
 main :: IO ()
 main = do
