@@ -21,7 +21,7 @@ productOfNumberOfWaysToBeatRecord = foldMap (getRels >>> Product)
 solveQuadraticEq :: (Floating a) => a -> a -> a -> (a, a)
 solveQuadraticEq a b c = over each solve ((+), (-))
  where
-  solve (.+-) = ((-b) .+- (sqrt (b ^ 2 - (4 * a * c)))) / (2 * a)
+  solve (+-) = ((-b) +- (sqrt (b ^ 2 - (4 * a * c)))) / (2 * a)
 
 combine :: [TimeDist] -> TimeDist
 combine ts = TimeDist time dist
