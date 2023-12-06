@@ -81,6 +81,7 @@ executable app
   other-modules:
       CmdArgs
       Input
+      TimeIt
       Paths_aoc2023
   hs-source-dirs:
       src/app

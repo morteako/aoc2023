@@ -11,7 +11,7 @@ import DayVersion (DayVersion, getDayNum)
 import Input (getInput)
 import Options.Applicative (execParser)
 import Solutions (solutions)
-import System.TimeIt (timeIt)
+import TimeIt (timeItNamed)
 import Utils ((=:))
 
 runner :: Options -> IO ()
@@ -30,7 +30,7 @@ runner o@Options{day, input} = do
               putStrLn $ "Currently implemented : " <> unwords (show <$> Map.keys solutions)
             Just dayRunner ->
               dayRunner i
-  timeIt $ do
+  timeItNamed "WithInput" $ do
     inputFile <- case input of
       StdIn -> do
         getContents
@@ -45,7 +45,7 @@ runner o@Options{day, input} = do
           SpecificDay d -> getInput $ getDayNum d
     putStr "> "
     print o
-    timeIt $ func inputFile
+    timeItNamed "Runner" $ func inputFile
 
 main :: IO ()
 main = do
