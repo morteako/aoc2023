@@ -45,6 +45,7 @@ library
       LambdaCase
       PatternSynonyms
       QuasiQuotes
+      StrictData
   ghc-options: -fno-warn-partial-type-signatures
   build-depends:
       HUnit
@@ -99,6 +100,7 @@ executable app
       LambdaCase
       PatternSynonyms
       QuasiQuotes
+      StrictData
   ghc-options: -fno-warn-partial-type-signatures
   build-depends:
       HUnit

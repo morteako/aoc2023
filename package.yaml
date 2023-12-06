@@ -26,6 +26,7 @@ default-extensions:
   - LambdaCase
   - PatternSynonyms
   - QuasiQuotes
+  - StrictData
 
 ghc-options:
   - -fno-warn-partial-type-signatures

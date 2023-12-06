@@ -1,7 +1,6 @@
 module Day.Day06 (run) where
 
 import Control.Arrow ((>>>))
-import Control.Lens (Each (each), over)
 import Data.Monoid (Product (Product))
 import Test.HUnit ((@=?))
 
@@ -19,7 +18,7 @@ productOfNumberOfWaysToBeatRecord = foldMap (getRels >>> Product)
     (succ -> floor -> left, ceiling -> right) -> right - left
 
 solveQuadraticEq :: (Floating a) => a -> a -> a -> (a, a)
-solveQuadraticEq a b c = over each solve ((+), (-))
+solveQuadraticEq a b c = (solve (+), solve (-))
  where
   solve (+-) = ((-b) +- (sqrt (b ^ 2 - (4 * a * c)))) / (2 * a)
 
