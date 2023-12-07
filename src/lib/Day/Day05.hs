@@ -4,23 +4,15 @@
 
 module Day.Day05 (run) where
 
-import Control.Arrow
+import Control.Arrow ((>>>))
 
-import Control.Monad (void)
-import Data.Containers.ListUtils (nubOrd)
 import Data.IntervalMap (Interval (IntervalCO))
-import Data.IntervalMap qualified
 import Data.IntervalMap.Generic.Interval (Interval (..))
 import Data.List
-import Data.List qualified as List
-import Data.List.Extra (firstJust, minimumOn)
 import Data.List.Split (splitOn)
 import GHC.Records (HasField (getField))
-import Safe (readMay)
 import Test.HUnit ((@=?))
-import Text.RawString.QQ (r)
-import Utils (traceLab)
-import Prelude hiding (max, min)
+import Prelude
 
 data Mapping = Mapping {destStart, sourceStart, range :: Integer}
 
@@ -38,20 +30,19 @@ data Func = Func {adder :: Integer, min :: Integer, max :: Integer}
 mapToFunc :: Mapping -> Func
 mapToFunc m = Func (m.destStart - m.sourceStart) m.sourceStart (m.sourceStart + m.range)
 
--- unpackFunc :: Func -> Int -> Int
--- -- unpackFunc (Func adder min max) x | error $ show adder = undefined
--- unpackFunc (Func adder min max) x | x >= min && x < max = traceLab ("changed:" ++ show x ++ " ," ++ show adder ++ " =>") $ x + adder
--- unpackFunc (Func adder min max) x = traceLab "unchanged" $ traceShow min $ x
--- unpackFuncs = go . sortOn (.min)
---  where
---   go :: [Func] -> (Integer -> Integer)
---   go [] x = x
---   go (Func adder min max : fs) x | x >= min && x < max = x + adder
---   go (_ : fs) x = unpackFuncs fs x
+unpackFuncs :: [Func] -> Integer -> Integer
+unpackFuncs = go . sortOn (.min)
+ where
+  go :: [Func] -> (Integer -> Integer)
+  go [] x = x
+  go (Func adder min max : fs) x | x >= min && x < max = x + adder
+  go (_ : fs) x = unpackFuncs fs x
 
-solveA (seeds, mappings) = "hei"
-
--- maps = foldr1 combMap $ map unpackFuncs $ reverse $ map (map mapToFunc) mappings
+solveA :: ([Integer], [[Mapping]]) -> Integer
+solveA (seeds, mappings) = minimum $ map combinedFunc seeds
+ where
+  combinedFunc = foldr1 (.) $ reverse $ map (unpackFuncs . map mapToFunc) mappings
+  funcs = map (unpackFuncs . map mapToFunc) mappings
 
 data Splitting = Before | OverlapLeft | RangeSubsumes | FuncSubsumes | OverlapRight | After | Equal | None deriving (Show)
 
@@ -115,15 +106,13 @@ getSeedRanges (val : range : rest) = IntervalCO val (val + range) : getSeedRange
 getSeedRanges [] = []
 
 solveB :: ([Integer], [[Mapping]]) -> Integer
-solveB (seeds, mappings) = minimum $ concatMap getAll $ foldl' app seedsRanges mappingRanges
+solveB (seeds, mappings) = minimum $ map (.lower) $ foldl' app seedRanges mappingRanges
  where
   app r rs = sort $ applyRanges r rs
 
-  seedsRanges = sort (getSeedRanges seeds)
+  seedRanges = sort (getSeedRanges seeds)
 
   mappingRanges = map (sort . map (funcToAdder . mapToFunc)) mappings
-
-  getAll x = [x.lower, x.upper - 1]
 
 funcToAdder m = (IntervalCO m.min m.max, m.adder)
 
@@ -132,7 +121,7 @@ run input = do
   let parsed = parse input
   let resA = solveA parsed
   print resA
-
+  resA @=? 579439039
   let resB = solveB parsed
   print resB
   resB @=? 7873084
