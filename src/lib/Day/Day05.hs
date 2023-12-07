@@ -1,28 +1,21 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE Strict #-}
 {-# LANGUAGE NoFieldSelectors #-}
 
 module Day.Day05 (run) where
 
 import Control.Arrow
-import Control.Lens
+
 import Control.Monad (void)
 import Data.Containers.ListUtils (nubOrd)
-import Data.Function
-import Data.IntMap (IntMap)
-import Data.IntMap qualified as Map
-import Data.IntSet qualified as IntSet
-import Data.IntSet qualified as Set
+import Data.IntervalMap (Interval (IntervalCO))
+import Data.IntervalMap qualified
+import Data.IntervalMap.Generic.Interval (Interval (..))
 import Data.List
 import Data.List qualified as List
 import Data.List.Extra (firstJust, minimumOn)
 import Data.List.Split (splitOn)
-import Data.Map (Map)
-import Data.Semigroup
-import Data.Text (Text)
-import Data.Text qualified as Text
-import Data.Text.IO qualified as Text
-import Debug.Trace
+import GHC.Records (HasField (getField))
 import Safe (readMay)
 import Test.HUnit ((@=?))
 import Text.RawString.QQ (r)
@@ -31,139 +24,115 @@ import Prelude hiding (max, min)
 
 data Mapping = Mapping {destStart, sourceStart, range :: Integer}
 
--- q ::
--- q = (.destStart)
-
--- 1 => 2,  2 => 3,  3 => 4
---
-
-instance Show Mapping where
-  show (Mapping x y z) = show x ++ " <= " ++ show y ++ " : " ++ show z
-
 parse :: [Char] -> ([Integer], [[Mapping]])
 parse = splitOn "\n\n" >>> map lines >>> parseSeedsAndMaps
  where
   parseSeedsAndMaps ([seeds] : maps) = (map (read @Integer) (tail $ words seeds), map parseMappings maps)
   parseMappings (_name : lines) = map toMapping $ map parseMapping $ lines
-  parseMapping = words >>> map (readInt @Integer)
+  parseMapping = words >>> map (read @Integer)
   toMapping [a, b, c] = Mapping a b c
   toMapping xs = error $ show xs
 
-readInt :: (Read a) => String -> a
-readInt x = case readMay x of
-  Just q -> q
-  Nothing -> error x
+data Func = Func {adder :: Integer, min :: Integer, max :: Integer}
 
-data Func = Func {adder :: Integer, min :: Integer, max :: Integer} deriving ()
-
-instance Show Func where
-  show (Func adder mi ma) =
-    concat
-      [ "{"
-      , s mi
-      , "-"
-      , s ma
-      , " ["
-      , if adder >= 0 then "+" else ""
-      , s adder
-      , "] "
-      , s $ adder + mi
-      , "-"
-      , s $ adder + ma
-      , "}"
-      ]
-   where
-    s = show
-
--- newtype Adder = Adder Int deriving (Show)
-
--- asdf
 mapToFunc :: Mapping -> Func
 mapToFunc m = Func (m.destStart - m.sourceStart) m.sourceStart (m.sourceStart + m.range)
-
--- funcToM :: Func -> M
--- funcToM f = Map.singleton f.min (f.adder)
-
--- combMap from to = Map.mapWithKey (\k v -> Map.findWithDefault v k to)
 
 -- unpackFunc :: Func -> Int -> Int
 -- -- unpackFunc (Func adder min max) x | error $ show adder = undefined
 -- unpackFunc (Func adder min max) x | x >= min && x < max = traceLab ("changed:" ++ show x ++ " ," ++ show adder ++ " =>") $ x + adder
 -- unpackFunc (Func adder min max) x = traceLab "unchanged" $ traceShow min $ x
-unpackFuncs = go . sortOn (.min)
- where
-  go :: [Func] -> (Integer -> Integer)
-  go [] x = x
-  go (Func adder min max : fs) x | x >= min && x < max = x + adder
-  go (_ : fs) x = unpackFuncs fs x
-
-toId i = Text.pack $ "a" ++ show i
+-- unpackFuncs = go . sortOn (.min)
+--  where
+--   go :: [Func] -> (Integer -> Integer)
+--   go [] x = x
+--   go (Func adder min max : fs) x | x >= min && x < max = x + adder
+--   go (_ : fs) x = unpackFuncs fs x
 
 solveA (seeds, mappings) = "hei"
 
 -- maps = foldr1 combMap $ map unpackFuncs $ reverse $ map (map mapToFunc) mappings
 
-getSeedRanges :: [Integer] -> [(Integer, Integer)]
-getSeedRanges (val : range : rest) = (val, val + range) : getSeedRanges rest
+data Splitting = Before | OverlapLeft | RangeSubsumes | FuncSubsumes | OverlapRight | After | Equal | None deriving (Show)
+
+makeSplitting :: Range -> Range -> Splitting
+makeSplitting range func
+  | range == func = Equal
+  | before func range = Before
+  | after func range = After
+  | subsumes range func = RangeSubsumes
+  | subsumes func range = FuncSubsumes
+  | overlaps range func && func < range = OverlapLeft
+  | overlaps range func && func > range = OverlapRight
+  | otherwise = None
+
+type Range = Data.IntervalMap.Interval Integer
+
+instance HasField "lower" Range Integer where
+  getField :: Range -> Integer
+  getField = lowerBound
+
+instance HasField "upper" Range Integer where
+  getField :: Range -> Integer
+  getField = upperBound
+
+applyRanges :: [Range] -> [(Range, Integer)] -> [Range]
+applyRanges range [] = range
+applyRanges [] _fs = []
+applyRanges (range : restRanges) fs@((funcRange, adder) : restFuncs) = case makeSplitting range funcRange of
+  _ | isEmpty range -> applyRanges restRanges fs
+  _ | isEmpty funcRange -> applyRanges (range : restRanges) restFuncs
+  Before -> applyRanges (range : restRanges) restFuncs
+  After -> range : applyRanges restRanges fs
+  Equal -> fmap (+ adder) range : applyRanges restRanges restFuncs
+  OverlapLeft ->
+    let
+      newRangeLeft = fmap (+ adder) $ IntervalCO range.lower funcRange.upper
+      modifiedRange = IntervalCO funcRange.upper range.upper
+     in
+      newRangeLeft : applyRanges (modifiedRange : restRanges) restFuncs
+  OverlapRight ->
+    let
+      plainRange = IntervalCO range.lower funcRange.lower
+      addedRange = fmap (+ adder) $ IntervalCO funcRange.lower range.upper
+     in
+      plainRange : addedRange : applyRanges restRanges fs
+  RangeSubsumes ->
+    let
+      newRangeLeft = IntervalCO range.lower funcRange.lower
+      addedRange = fmap (+ adder) funcRange
+      modifiedRange = IntervalCO funcRange.upper range.upper
+     in
+      newRangeLeft : addedRange : applyRanges (modifiedRange : restRanges) restFuncs
+  FuncSubsumes ->
+    let
+      addedRange = fmap (+ adder) range
+     in
+      addedRange : applyRanges restRanges fs
+
+getSeedRanges :: [Integer] -> [Range]
+getSeedRanges (val : range : rest) = IntervalCO val (val + range) : getSeedRanges rest
 getSeedRanges [] = []
 
--- PRØVE å dunke ranges og så holde tritt på min?
-
-solveB (seeds, mappings) = head wtf -- zipWith map maps (traceLab "limsMi" limsMi)
+solveB :: ([Integer], [[Mapping]]) -> Integer
+solveB (seeds, mappings) = minimum $ concatMap getAll $ foldl' app seedsRanges mappingRanges
  where
-  wtf = sort $ map normal $ keepSeeds $ concatMap f $ concat $ (zipWith map maps limsMi ++ zipWith map maps limsMa)
-  allSeeds = sort $ getSeedRanges seeds
+  app r rs = sort $ applyRanges r rs
 
-  f x = [x, x - 1, x + 1]
-  -- fil = flip checkInside allSeeds
-  keepSeeds = filter (\i -> any (\(mi, ma) -> i >= mi && i <= ma) allSeeds)
-  -- check x | mod x 10000 == 0, traceShow x False = undefined
-  -- check (maps -> x) = if IntSet.member x allSeeds then Just x else Nothing
-  maps = scanl1 (.) $ map unpackFuncs $ map (map revmapToFunc) mappings
+  seedsRanges = sort (getSeedRanges seeds)
 
-  normal = foldr1 (.) $ reverse $ map unpackFuncs $ map (map mapToFunc) mappings
+  mappingRanges = map (sort . map (funcToAdder . mapToFunc)) mappings
 
-  -- relSeeds = minses
+  getAll x = [x.lower, x.upper - 1]
 
-  -- (minses, miadds) = unzip $ map (\m -> (m.min, m.min + m.adder)) $ map mapToFunc $ concat mappings
-
-  limsMi = map (map (.min) . map mapToFunc) mappings
-  limsMa = map (map (.max) . map mapToFunc) mappings
-
--- xs = nubOrd $ sort $ (+) <$> minses <*> miadds
-
-revmapToFunc :: Mapping -> Func
-revmapToFunc m = Func (m.sourceStart - m.destStart) m.destStart (m.destStart + m.range)
-
-testInput =
-  [r|seeds: 50 10
-
-seed-to-soil map:
-40 55 56
-
-seed-to-soil map:
-30 42 10
-|]
+funcToAdder m = (IntervalCO m.min m.max, m.adder)
 
 run :: String -> IO ()
-run input = void $ do
-  -- input <- putStrLn "#####    testInput   #####" >> pure testInput
-  print $ 123
-  print input
+run input = do
   let parsed = parse input
-  -- print parsed
-  mapM_ print $ map (map mapToFunc) $ snd parsed
   let resA = solveA parsed
-  print "--------------------------------------------"
-  Text.putStrLn resA
-  print "--------------------------------------------"
+  print resA
 
-  -- let f = Func{adder = 70, min = 18, max = 25}
-  -- print $ "\n\n" ++ (show $ unpackFunc f $ 53)
-  -- print $ unpackFunc (mapToFunc $ Mapping 18 25 70) 53
-
-  -- -- resA @=? 1715
   let resB = solveB parsed
   print resB
-
--- resB @=? 1739
+  resB @=? 7873084
