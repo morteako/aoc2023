@@ -7,9 +7,11 @@ module Day.Day05 (run) where
 import Control.Arrow
 import Control.Lens
 import Control.Monad (void)
+import Data.Containers.ListUtils (nubOrd)
 import Data.Function
 import Data.IntMap (IntMap)
 import Data.IntMap qualified as Map
+import Data.IntSet qualified as IntSet
 import Data.IntSet qualified as Set
 import Data.List
 import Data.List qualified as List
@@ -27,7 +29,7 @@ import Text.RawString.QQ (r)
 import Utils (traceLab)
 import Prelude hiding (max, min)
 
-data Mapping = Mapping {destStart, sourceStart, range :: Int}
+data Mapping = Mapping {destStart, sourceStart, range :: Integer}
 
 -- q ::
 -- q = (.destStart)
@@ -38,12 +40,12 @@ data Mapping = Mapping {destStart, sourceStart, range :: Int}
 instance Show Mapping where
   show (Mapping x y z) = show x ++ " <= " ++ show y ++ " : " ++ show z
 
-parse :: [Char] -> ([Int], [[Mapping]])
+parse :: [Char] -> ([Integer], [[Mapping]])
 parse = splitOn "\n\n" >>> map lines >>> parseSeedsAndMaps
  where
-  parseSeedsAndMaps ([seeds] : maps) = (map (read @Int) (tail $ words seeds), map parseMappings maps)
+  parseSeedsAndMaps ([seeds] : maps) = (map (read @Integer) (tail $ words seeds), map parseMappings maps)
   parseMappings (_name : lines) = map toMapping $ map parseMapping $ lines
-  parseMapping = words >>> map (readInt @Int)
+  parseMapping = words >>> map (readInt @Integer)
   toMapping [a, b, c] = Mapping a b c
   toMapping xs = error $ show xs
 
@@ -52,7 +54,26 @@ readInt x = case readMay x of
   Just q -> q
   Nothing -> error x
 
-data Func = Func {adder :: Int, min :: Int, max :: Int} deriving (Show)
+data Func = Func {adder :: Integer, min :: Integer, max :: Integer} deriving ()
+
+instance Show Func where
+  show (Func adder mi ma) =
+    concat
+      [ "{"
+      , s mi
+      , "-"
+      , s ma
+      , " ["
+      , if adder >= 0 then "+" else ""
+      , s adder
+      , "] "
+      , s $ adder + mi
+      , "-"
+      , s $ adder + ma
+      , "}"
+      ]
+   where
+    s = show
 
 -- newtype Adder = Adder Int deriving (Show)
 
@@ -60,27 +81,10 @@ data Func = Func {adder :: Int, min :: Int, max :: Int} deriving (Show)
 mapToFunc :: Mapping -> Func
 mapToFunc m = Func (m.destStart - m.sourceStart) m.sourceStart (m.sourceStart + m.range)
 
-type M = IntMap Int
+-- funcToM :: Func -> M
+-- funcToM f = Map.singleton f.min (f.adder)
 
-funcToM :: Func -> M
-funcToM f = Map.singleton f.min (f.adder)
-
-combMap from to = Map.mapWithKey (\k v -> Map.findWithDefault v k to)
-
-par x = "(" ++ x ++ ")"
-
-pack = Text.pack . show
-
-toZ3 :: Text -> Text -> Func -> Text
-toZ3 oldId newId f =
-  repl "#MIN" (pack f.min) $
-    repl "#MAX" (pack f.max) $
-      repl "#NEWID" newId $
-        repl "#OLDID" oldId $
-          repl "#ADDER" (pack f.adder) t
- where
-  t = "(assert (if (and (>= #MIN #OLDID) (< #OLDID #MAX)) (= #NEWID (+ #OLDID #ADDER)) (= #NEWID #OLDID )))"
-  repl old new = Text.replace old new
+-- combMap from to = Map.mapWithKey (\k v -> Map.findWithDefault v k to)
 
 -- unpackFunc :: Func -> Int -> Int
 -- -- unpackFunc (Func adder min max) x | error $ show adder = undefined
@@ -88,97 +92,78 @@ toZ3 oldId newId f =
 -- unpackFunc (Func adder min max) x = traceLab "unchanged" $ traceShow min $ x
 unpackFuncs = go . sortOn (.min)
  where
-  go :: [Func] -> (Int -> Int)
+  go :: [Func] -> (Integer -> Integer)
   go [] x = x
   go (Func adder min max : fs) x | x >= min && x < max = x + adder
   go (_ : fs) x = unpackFuncs fs x
 
 toId i = Text.pack $ "a" ++ show i
 
-solveA (seeds, mappings) = Text.unlines $ decls ++ [seedDecl] ++ assertMappings
- where
-  funcs = map (map mapToFunc) mappings
-  assertMappings = foldMap id $ imap (\i m -> map (toZ3 (toId i) (toId (i + 1))) m) $ funcs
-
-  decls = imap (\i _ -> declareConst i) $ (funcs ++ [[]])
-
-  seedDecl = "(assert (or " <> ss <> "))"
-  ss = Text.intercalate " " $ map (\x -> "(= a0 " <> pack x <> ")") seeds
-
-declareConst id = "(declare-const " <> (toId id) <> " Int)"
+solveA (seeds, mappings) = "hei"
 
 -- maps = foldr1 combMap $ map unpackFuncs $ reverse $ map (map mapToFunc) mappings
 
--- getAllSeeds :: [Int] -> [Int]
--- getAllSeeds (val : range : rest) = take range [val ..] ++ getAllSeeds rest
--- getAllSeeds [] = []
+getSeedRanges :: [Integer] -> [(Integer, Integer)]
+getSeedRanges (val : range : rest) = (val, val + range) : getSeedRanges rest
+getSeedRanges [] = []
 
--- solveB (getAllSeeds -> traceLab "seeds" -> id -> seeds, mappings) = firstJust check [minimum (map (.destStart) (last mappings)) ..]
---  where
---   check x | mod x 10000 == 0, traceShow x False = undefined
---   check (maps -> x) = if elem x seeds then Just x else Nothing
---   maps = foldr1 (.) $ map unpackFuncs $ map (map revmapToFunc) mappings
+-- PRØVE å dunke ranges og så holde tritt på min?
 
--- getOutside :: [[Mapping]] -> _
--- getOutside mappings = IM.fromList $ map (,()) $ map (\m -> IntervalCO m.sourceStart (m.sourceStart + m.range)) $ concat mappings
+solveB (seeds, mappings) = head wtf -- zipWith map maps (traceLab "limsMi" limsMi)
+ where
+  wtf = sort $ map normal $ keepSeeds $ concatMap f $ concat $ (zipWith map maps limsMi ++ zipWith map maps limsMa)
+  allSeeds = sort $ getSeedRanges seeds
+
+  f x = [x, x - 1, x + 1]
+  -- fil = flip checkInside allSeeds
+  keepSeeds = filter (\i -> any (\(mi, ma) -> i >= mi && i <= ma) allSeeds)
+  -- check x | mod x 10000 == 0, traceShow x False = undefined
+  -- check (maps -> x) = if IntSet.member x allSeeds then Just x else Nothing
+  maps = scanl1 (.) $ map unpackFuncs $ map (map revmapToFunc) mappings
+
+  normal = foldr1 (.) $ reverse $ map unpackFuncs $ map (map mapToFunc) mappings
+
+  -- relSeeds = minses
+
+  -- (minses, miadds) = unzip $ map (\m -> (m.min, m.min + m.adder)) $ map mapToFunc $ concat mappings
+
+  limsMi = map (map (.min) . map mapToFunc) mappings
+  limsMa = map (map (.max) . map mapToFunc) mappings
+
+-- xs = nubOrd $ sort $ (+) <$> minses <*> miadds
 
 revmapToFunc :: Mapping -> Func
 revmapToFunc m = Func (m.sourceStart - m.destStart) m.destStart (m.destStart + m.range)
 
 testInput =
-  [r|seeds: 79 14 55 100
+  [r|seeds: 50 10
 
 seed-to-soil map:
-50 98 2
-52 50 48
+40 55 56
 
-soil-to-fertilizer map:
-0 15 37
-37 52 2
-39 0 15
-
-fertilizer-to-water map:
-49 53 8
-0 11 42
-42 0 7
-57 7 4
-
-water-to-light map:
-88 18 7
-18 25 70
-
-light-to-temperature map:
-45 77 23
-81 45 19
-68 64 13
-
-temperature-to-humidity map:
-0 69 1
-1 0 69
-
-humidity-to-location map:
-60 56 37
-56 93 4
+seed-to-soil map:
+30 42 10
 |]
 
 run :: String -> IO ()
 run input = void $ do
   -- input <- putStrLn "#####    testInput   #####" >> pure testInput
+  print $ 123
   print input
   let parsed = parse input
   -- print parsed
-  mapM_ print $ map (foldMap funcToM . map mapToFunc) $ snd parsed
+  mapM_ print $ map (map mapToFunc) $ snd parsed
   let resA = solveA parsed
   print "--------------------------------------------"
   Text.putStrLn resA
   print "--------------------------------------------"
 
--- let f = Func{adder = 70, min = 18, max = 25}
--- print $ "\n\n" ++ (show $ unpackFunc f $ 53)
--- print $ unpackFunc (mapToFunc $ Mapping 18 25 70) 53
+  -- let f = Func{adder = 70, min = 18, max = 25}
+  -- print $ "\n\n" ++ (show $ unpackFunc f $ 53)
+  -- print $ unpackFunc (mapToFunc $ Mapping 18 25 70) 53
 
--- -- resA @=? 1715
--- let resB = solveB parsed
--- print resB
+  -- -- resA @=? 1715
+  let resB = solveB parsed
+  print resB
 
 -- resB @=? 1739
