@@ -24,17 +24,17 @@ parse = lines >>> parseDirsAndSteps >>> (\(dirs, Map.fromList -> steps) -> (dirs
   getMMM c = Set.filter (\x -> last x == c) >>> Set.toList
 
 countStepsToFromAAAtoZZZ :: ([Dir], Map (String, Dir) String, c) -> Int
-countStepsToFromAAAtoZZZ (dirs, dict, _) = succ $ fromJust $ findIndex (== "ZZZ") (find dict (cycle dirs) "AAA")
+countStepsToFromAAAtoZZZ (cycle -> dirs, dict, _) = fromJust $ findIndex (== "ZZZ") (scanl (getNextNode dict) "AAA" dirs)
 
-find :: Map (String, Dir) String -> [Dir] -> String -> [String]
-find m (d : ds) cur = let next = m Map.! (cur, d) in next : find m ds next
+getNextNode :: Map (String, Dir) String -> String -> Dir -> String
+getNextNode m cur dir = m Map.! (cur, dir)
 
 countsStepsToFromAllStartsToEnd :: ([Dir], Map (String, Dir) String, ([String], [String])) -> Integer
-countsStepsToFromAllStartsToEnd (dirs, dict, (starts, Set.fromList -> ends)) = getLcm $ map findOne starts
+countsStepsToFromAllStartsToEnd (cycle -> dirs, dict, (starts, Set.fromList -> ends)) = getLcm $ map findOne starts
  where
   getLcm = foldr1 lcm . map toInteger
   isEnd x = Set.member x ends
-  findOne start = succ $ fromJust $ findIndex isEnd (find dict (cycle dirs) start)
+  findOne start = fromJust $ findIndex isEnd (scanl (getNextNode dict) start dirs)
 
 run :: String -> IO ()
 run input = do
