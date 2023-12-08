@@ -1,8 +1,17 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeData #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Utils where
 
 import Data.Foldable (Foldable (foldl'))
+import Data.Kind
 import Data.List.Extra hiding (foldl1')
-import Data.Map.Lazy qualified as Map
+import Data.Map (Map)
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
 import Data.Semigroup (Sum (Sum, getSum))
 import Debug.Trace
@@ -60,6 +69,21 @@ traceOn f x = trace (f x) x
 
 (.?) :: (Show t1) => (t2 -> t1) -> (t1 -> t3) -> t2 -> t3
 (.?) f g = \x -> g $ traceShowId (f x)
+
+class Print a where
+    mprint :: a -> IO ()
+
+instance Print String where
+    mprint = print
+
+instance {-# INCOHERENT #-} (Show a) => Print [a] where
+    mprint = mapM_ print
+
+instance {-# INCOHERENT #-} (Show a) => Print a where
+    mprint = print
+
+instance {-# INCOHERENT #-} (Show k, Show v) => Print (Map k v) where
+    mprint = mapM_ (putStrLn . (\(k, v) -> show k ++ " => " ++ show v)) . Map.toList
 
 -- makeMap :: [Dot] -> Map.Map (V2 Int) [Label]
 -- makeMap = Map.unionWith (<>) defMap . Map.fromListWith (<>) . fmap (\(Dot l pos) -> (pos, pure l))

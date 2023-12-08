@@ -10,6 +10,7 @@ import Data.Map qualified as Map
 import Data.Ord (Down (Down))
 import Data.Tuple (swap)
 import Test.HUnit ((@=?))
+import Utils
 
 data Card = Num Int | T | J | Q | K | A deriving (Show, Read, Eq, Ord)
 
