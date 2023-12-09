@@ -10,6 +10,7 @@ import Day.Day05 qualified as Day05
 import Day.Day06 qualified as Day06
 import Day.Day07 qualified as Day07
 import Day.Day08 qualified as Day08
+import Day.Day09 qualified as Day09
 import DayVersion
 import Utils ((=:))
 
@@ -24,4 +25,5 @@ solutions =
     , NormalDay 6 =: Day06.run
     , NormalDay 7 =: Day07.run
     , NormalDay 8 =: Day08.run
+    , NormalDay 9 =: Day09.run
     ]

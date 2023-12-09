@@ -23,10 +23,10 @@ over :: (Char -> Char) -> Letter -> Letter
 over f (Letter x) = Letter $ f x
 
 isUpper :: Letter -> Bool
-isUpper = Char.isUpper . getLetter
+isUpper = Char.isUpper . (.getLetter)
 
 isLower :: Letter -> Bool
-isLower = Char.isLower . getLetter
+isLower = Char.isLower . (.getLetter)
 
 toUpper :: Letter -> Letter
 toUpper = over Char.toUpper
@@ -58,7 +58,7 @@ instance Enum Letter where
         asciiNumToLetterIndex x = if x < numLetters then smallAOrd + x else largeAOrd + x - numLetters
 
     fromEnum :: Letter -> Int
-    fromEnum = letterIndex . Char.ord . getLetter
+    fromEnum = letterIndex . Char.ord . (.getLetter)
       where
         letterIndex x = if x >= smallAOrd then x - smallAOrd else numLetters + x - largeAOrd
 

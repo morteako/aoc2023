@@ -27,6 +27,9 @@ default-extensions:
   - PatternSynonyms
   - QuasiQuotes
   - StrictData
+  - DataKinds
+  - OverloadedRecordDot
+  - NoFieldSelectors
 
 ghc-options:
   - -fno-warn-partial-type-signatures
