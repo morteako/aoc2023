@@ -1,7 +1,7 @@
 module Day.Day09 where
 
 import Control.Arrow ((>>>))
-import Data.Foldable.Extra (sumOn')
+import Data.Foldable.Extra (Foldable (foldl'), sumOn')
 import Test.HUnit ((@=?))
 
 parse :: String -> [[Int]]
@@ -10,10 +10,6 @@ parse = lines >>> map (words >>> map read)
 diffs :: (Num c) => [c] -> [c]
 diffs xs = zipWith (-) xs (tail xs)
 
-extrapolate :: Int -> [[Int]] -> Int
-extrapolate last [] = last
-extrapolate lower ((beforeNew : _) : rest) = extrapolate (lower + beforeNew) rest
-
 takeWhileIncludeNext :: (a -> Bool) -> [a] -> [a]
 takeWhileIncludeNext p xs = case span p xs of
   (trues, falses) -> trues ++ take 1 falses
@@ -21,7 +17,7 @@ takeWhileIncludeNext p xs = case span p xs of
 extrapolateNumbers :: (forall a. [a] -> [a]) -> [[Int]] -> Int
 extrapolateNumbers transformer = sumOn' getExtrapolatedValue
  where
-  getExtrapolatedValue = extrapolate 0 . takeWhileIncludeNext (any (/= 0)) . iterate diffs . transformer
+  getExtrapolatedValue = sumOn' head . takeWhileIncludeNext (any (/= 0)) . iterate diffs . transformer
 
 run :: String -> IO ()
 run input = do
