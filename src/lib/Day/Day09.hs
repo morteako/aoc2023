@@ -10,14 +10,10 @@ parse = lines >>> map (words >>> map read)
 diffs :: (Num c) => [c] -> [c]
 diffs xs = zipWith (-) xs (tail xs)
 
-takeWhileIncludeNext :: (a -> Bool) -> [a] -> [a]
-takeWhileIncludeNext p xs = case span p xs of
-  (trues, falses) -> trues ++ take 1 falses
-
 extrapolateNumbers :: (forall a. [a] -> [a]) -> [[Int]] -> Int
 extrapolateNumbers transformer = sumOn' getExtrapolatedValue
  where
-  getExtrapolatedValue = sumOn' head . takeWhileIncludeNext (any (/= 0)) . iterate diffs . transformer
+  getExtrapolatedValue = sumOn' head . fst . span (any (/= 0)) . iterate diffs . transformer
 
 run :: String -> IO ()
 run input = do
