@@ -1,7 +1,7 @@
 module Day.Day09 where
 
 import Control.Arrow ((>>>))
-import Data.Foldable.Extra (Foldable (foldl'), sumOn')
+import Data.Foldable.Extra (sumOn')
 import Test.HUnit ((@=?))
 
 parse :: String -> [[Int]]
