@@ -7,13 +7,10 @@ import Test.HUnit ((@=?))
 parse :: String -> [[Int]]
 parse = lines >>> map (words >>> map read)
 
-diffs :: (Num c) => [c] -> [c]
-diffs xs = zipWith (-) xs (tail xs)
-
 extrapolateNumbers :: (forall a. [a] -> [a]) -> [[Int]] -> Int
 extrapolateNumbers transformer = sumOn' getExtrapolatedValue
  where
-  getExtrapolatedValue = sumOn' head . takeWhile (any (/= 0)) . iterate diffs . transformer
+  getExtrapolatedValue = sumOn' head . takeWhile (any (/= 0)) . iterate (zipWith (-) <*> tail) . transformer
 
 run :: String -> IO ()
 run input = do
