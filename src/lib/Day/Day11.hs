@@ -7,8 +7,8 @@ import Data.Map qualified as Map
 import Linear (V2 (V2))
 import Test.HUnit ((@=?))
 
-parse :: Integer -> String -> [V2 Integer]
-parse (pred -> repl) = lines >>> addGalaxies >>> Map.fromList >>> Map.filter (== '#') >>> Map.keys
+parse :: String -> Integer -> [V2 Integer]
+parse str (pred -> repl) = lines >>> addGalaxies >>> Map.fromList >>> Map.filter (== '#') >>> Map.keys $ str
  where
   addGalaxies ls = zip (V2 <$> indexRows 0 ls <*> indexRows 0 (transpose ls)) (concat ls)
 
@@ -27,10 +27,10 @@ sumDistances galaxies =
     pure $ mandist k k2
 
 run :: String -> IO ()
-run input = do
-  let resA = sumDistances (parse 2 input)
+run (parse -> parsed) = do
+  let resA = sumDistances (parsed 2)
   print resA
   resA @=? 9957702
-  let resB = sumDistances (parse 1000000 input)
+  let resB = sumDistances (parsed 1000000)
   print resB
   resB @=? 512240933238
