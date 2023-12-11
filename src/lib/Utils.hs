@@ -7,6 +7,7 @@
 
 module Utils where
 
+import Control.Lens
 import Data.Foldable (Foldable (foldl'))
 import Data.Kind
 import Data.List.Extra hiding (foldl1')
@@ -58,7 +59,12 @@ printV2Map m = do
     let xs = Map.toList m
     let g = groupOn (\(V2 _ y, _) -> y) $ sortOn (\(V2 x y, _) -> V2 y x) xs
     let gg = fmap (fmap snd) g
-    mapM_ print gg
+    mapM_
+        ( \x -> do
+            mapM_ (putStr . show) x
+            putStrLn ""
+        )
+        $ gg
     putStrLn ""
 
 traceLab :: (Show a) => [Char] -> a -> a
@@ -69,6 +75,15 @@ traceOn f x = trace (f x) x
 
 (.?) :: (Show t1) => (t2 -> t1) -> (t1 -> t3) -> t2 -> t3
 (.?) f g = \x -> g $ traceShowId (f x)
+
+parseAsciiMap ::
+    (Char -> Maybe a) ->
+    String ->
+    Map (V2 Int) a
+parseAsciiMap f = ifoldMapOf (asciiGrid <. folding f) Map.singleton
+  where
+    asciiGrid :: IndexedFold (V2 Int) String Char
+    asciiGrid = reindexed (uncurry (flip V2)) (lined <.> folded)
 
 class Print a where
     mprint :: a -> IO ()

@@ -2,15 +2,16 @@ module Day.Day09 where
 
 import Control.Arrow ((>>>))
 import Data.Foldable.Extra (sumOn')
+import Data.Maybe qualified as Maybe
+import Data.Monoid
 import Test.HUnit ((@=?))
 
 parse :: String -> [[Int]]
 parse = lines >>> map (words >>> map read)
 
-extrapolateNumbers :: (forall a. [a] -> [a]) -> [[Int]] -> Int
 extrapolateNumbers transformer = sumOn' getExtrapolatedValue
  where
-  getExtrapolatedValue = sumOn' head . takeWhile (any (/= 0)) . iterate (zipWith (-) <*> tail) . transformer
+  getExtrapolatedValue = foldMap (foldMap Sum . Maybe.listToMaybe) . iterate (zipWith (-) <*> tail) . transformer
 
 run :: String -> IO ()
 run input = do

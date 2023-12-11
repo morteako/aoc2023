@@ -11,19 +11,21 @@ import Day.Day06 qualified as Day06
 import Day.Day07 qualified as Day07
 import Day.Day08 qualified as Day08
 import Day.Day09 qualified as Day09
+import Day.Day10 qualified as Day10
 import DayVersion
 import Utils ((=:))
 
 solutions :: Map DayVersion (String -> IO ())
 solutions =
   Map.fromList
-    [ NormalDay 1 =: Day01.run
-    , NormalDay 2 =: Day02.run
-    , NormalDay 3 =: Day03.run
-    , NormalDay 4 =: Day04.run
-    , NormalDay 5 =: Day05.run
-    , NormalDay 6 =: Day06.run
-    , NormalDay 7 =: Day07.run
-    , NormalDay 8 =: Day08.run
-    , NormalDay 9 =: Day09.run
+    [ "1" =: Day01.run
+    , "2" =: Day02.run
+    , "3" =: Day03.run
+    , "4" =: Day04.run
+    , "5" =: Day05.run
+    , "6" =: Day06.run
+    , "7" =: Day07.run
+    , "8" =: Day08.run
+    , "9" =: Day09.run
+    , "10" =: Day10.run
     ]
