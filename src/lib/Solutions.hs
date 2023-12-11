@@ -30,5 +30,5 @@ solutions =
     , "8" =: Day.Day08.run
     , "9" =: Day.Day09.run
     , "10" =: Day.Day10.run
-    , "11" =: Day.Day11.run
+    -- , "11" =: Day.Day11.run
     ]

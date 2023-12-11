@@ -23,7 +23,7 @@ import Utils
 
 data Dir = N | S | W | E deriving (Show, Eq, Ord, Enum, Bounded)
 
-data Tile = Pipe Pipe | Bend Bend | Start | Dot deriving (Eq, Ord)
+data Tile = Pipe Pipe | Bend Bend | Start | Dot | FakeDot | Block deriving (Eq, Ord)
 
 data Pipe = Vert | Hor deriving (Eq, Ord)
 data Bend = NE | NW | SW | SE deriving (Eq, Ord, Show)
@@ -38,6 +38,8 @@ instance Show Tile where
     Bend SE -> "F"
     Start -> "S"
     Dot -> "."
+    FakeDot -> "?"
+    Block -> "#"
 
 toTile x = case x of
   '|' -> Just $ Pipe Vert
@@ -58,7 +60,7 @@ dirToVec x = case x of
 
 pattern a :# b = (a, b)
 
-nextWalk d x = case d :# x of
+nextWalkMay d x = case d :# x of
   N :# Pipe Vert -> Just N
   S :# Pipe Vert -> Just S
   W :# Pipe Hor -> Just W
@@ -74,23 +76,23 @@ nextWalk d x = case d :# x of
   d :# Start -> Just d
   _ -> Nothing
 
+nextWalk d x = case nextWalkMay d x of
+  Nothing -> error $ show (d, x)
+  Just x -> x
+
 -- N :# Start -> undefined
 
-walk grid startDir startPos = go startDir startPos 0
- where
-  go d pos c = case grid ! pos of
-    -- x | flip const (d, pos, x, nextWalk d x) (c > 20) -> -10
-    Start | c > 0 -> []
-    tile -> case (nextWalk d tile, tile) of
-      (Just newDir, Bend _) -> Left pos : go newDir (dirToVec newDir + pos) (c + 1)
-      (Just newDir, _) -> Right pos : go newDir (dirToVec newDir + pos) (c + 1)
-      -- (Just newDir, _) -> go newDir (dirToVec newDir + pos) (c + 1)
-      _ -> error $ show $ (d, pos, tile, nextWalk d tile)
+-- walk grid startDir startPos = go startDir startPos 0
+--  where
+--   go d pos c = case grid ! pos of
+--     -- x | flip const (d, pos, x, nextWalk d x) (c > 20) -> -10
+--     Start | c > 0 -> []
+--     tile -> case (nextWalk d tile, tile) of
+--       (newDir, Bend _) -> Left pos : go newDir (dirToVec newDir + pos) (c + 1)
+--       (newDir, _) -> Right pos : go newDir (dirToVec newDir + pos) (c + 1)
 
-getX (V2 x _) = x
-getY (V2 _ y) = y
-
-zipSelf = zip <*> tail
+-- (Just newDir, _) -> go newDir (dirToVec newDir + pos) (c + 1)
+-- _ -> error $ show $ (d, pos, tile, nextWalk d tile)
 
 -- shoelace points = abs $ sum (zipWith calc xs ys) * 0.5
 --  where
@@ -104,11 +106,11 @@ parse = parseAsciiMap toTile . unlines . filter (not . null) . lines
 
 --
 
-solveA :: Map.Map (V2 Int) Tile -> _
-solveA grid = length (walk grid startDir startPos) `div` 2
- where
-  startPos = id $ fst $ Map.findMin $ Map.filter (== Start) grid
-  startDir = head $ catMaybes $ traceShowId $ mapMaybe (\d -> fmap (nextWalk d) (grid !? (startPos + dirToVec d))) [minBound .. maxBound]
+-- solveA :: Map.Map (V2 Int) Tile -> _
+-- solveA grid = length (walk grid startDir startPos) `div` 2
+--  where
+--   startPos = id $ fst $ Map.findMin $ Map.filter (== Start) grid
+--   startDir = head $ catMaybes $ traceLab "m" $ map (\d -> fmap (nextWalk d) (grid !? (startPos + dirToVec d))) [minBound .. maxBound]
 
 ---- A
 
@@ -158,8 +160,42 @@ canReachExitState grid path vis poses = do
 
   canReachExitState grid path newVis (newPoses)
 
+halfCombs (V2 xx yy) = tail $ do
+  x <- [0, 1, -1]
+  y <- [0, 1, -1]
+  pure $ V2 (xx + x * 0.5) (yy + y * 0.5)
+
+makeHalfDots k (map halfDirToVec -> blocks) = do
+  n <- halfCombs k
+  pure $ (n, if elem n blocks then Block else FakeDot)
+
+getDots k v = fmap (flip Map.singleton v) $ case v of
+  Bend NE -> makeHalfDots k [N, E]
+  Bend NW -> makeHalfDots k [N, W]
+  Bend SE -> makeHalfDots k [S, E]
+  Bend SW -> makeHalfDots k [S, W]
+  Pipe Hor -> makeHalfDots k [E, W]
+  Pipe Vert -> makeHalfDots k [N, S]
+  Dot -> makeHalfDots k []
+
+fixStart grid = (newGrid, startDir, startPos)
+ where
+  startPos = traceShowId $ fst $ Map.findMin $ Map.filter (== Start) grid
+  startDirs = catMaybes $ mapMaybe (\d -> fmap (nextWalkMay d) (grid !? (startPos + dirToVec d))) [minBound .. maxBound]
+
+  (newGrid, startDir) = case traceLab "startDir" $ sort startDirs of
+    [S, E] -> (Map.insert startPos (Bend SE) grid, S)
+    [S, W] -> (Map.insert startPos (Bend SW) grid, S)
+    [N, W] -> (Map.insert startPos (Bend NW) grid, N)
+    [N, E] -> (Map.insert startPos (Bend NE) grid, N)
+    _ -> error $ show $ sort startDirs
+
 solveB :: Map.Map (V2 Int) Tile -> _
-solveB grid = do
+solveB (fixStart -> (grid, startDir, startPos)) = do
+  print $ halfCombs (V2 0 0)
+  mprint $ makeHalfDots (V2 0 0) [S, N]
+  printV2Map grid
+  print "QQQ"
   -- print bends
   -- print "BEND" >> print bends
   -- print $ checkInside grid bends (
@@ -180,46 +216,40 @@ solveB grid = do
   --           mempty
   --           dots
 
-  print "bendmap"
-  printV2Map $ bendMap <> Map.map (const Dot) grid
+  -- print "bendmap"
+  print "-------------------"
+  print startDir
+  print startPos
+  print "bends" >> print bends
  where
-  -- print $ Set.size res
+  -- printV2Map $ bendMap
 
-  addHalfDots = Map.foldMapWithKey getDots ratioGrid
+  -- printV2Map $ bendMap <> Map.map (const Dot) grid
 
-  ratioGrid = Map.mapKeys (fmap toRational) grid
+  -- addHalfDots = Map.foldMapWithKey getDots ratioGrid
 
-  getDots k v = fmap (flip Map.singleton v) $ case v of
-    Bend NE -> [k]
-    Bend NW -> [k]
-    Bend SE -> [k]
-    Bend SW -> [k]
-    Pipe Hor -> k : fmap (+ k) [halfDirToVec N, halfDirToVec S]
-    Pipe Vert -> k : fmap (+ k) [halfDirToVec W, halfDirToVec E]
-    Dot -> [k]
-  -- Start -> _
+  -- ratioGrid = Map.mapKeys (fmap toRational) grid
 
   -- check p = canReachExitState grid bends Set.empty (Set.singleton p)
-  dots = Map.keys $ Map.difference grid bendMap
+  dots = Map.keys $ grid `Map.difference` (Map.fromList bends)
 
-  bendMap = Map.fromList $ map swap $ walkMod grid startDir startPos
-  bends = Map.keysSet $ bendMap
+  bends = walkMod grid startDir startPos
 
-  startPos = traceShowId $ fst $ Map.findMin $ Map.filter (== Start) grid
-  startDir = S -- head $ catMaybes $ mapMaybe (\d -> fmap (nextWalk d) (grid !? (startPos + dirToVec d))) [minBound .. maxBound]
+halfDirToVec :: (Fractional a) => Dir -> V2 a
+halfDirToVec = fmap (0.5 *) . dirToVec
 
-halfDirToVec = fmap ((1 % 2) *) . dirToVec
-
-walkMod grid startDir startPos = (Start, startPos) : go startDir startPos 0
+walkMod grid startDir startPos = go startDir (dirToVec startDir + startPos)
  where
-  go d pos c = case grid ! pos of
-    -- x | flip const (d, pos, x, nextWalk d x) (c > 20) -> -10
-    Start | c > 0 -> []
-    tile -> case (nextWalk d tile, tile) of
-      (Just newDir, b) -> (b, pos) : go newDir (dirToVec newDir + pos) (c + 1)
-      -- (Just newDir, p@Pipe{}) -> (p, pos) : go newDir (dirToVec newDir + pos) (c + 1)
-      -- (Just newDir, _) -> go newDir (dirToVec newDir + pos) (c + 1)
-      _ -> error $ show $ (d, pos, tile, nextWalk d tile)
+  go d pos =
+    let tile = grid ! pos
+     in case nextWalk d tile of
+          _ | pos == startPos -> [pos :# tile]
+          -- x | flip const (d, pos, x, nextWalk d x) (c > 20) -> -10
+          newDir -> (pos, tile) : go newDir (dirToVec newDir + pos)
+
+-- (Just newDir, p@Pipe{}) -> (p, pos) : go newDir (dirToVec newDir + pos) (c + 1)
+-- (Just newDir, _) -> go newDir (dirToVec newDir + pos) (c + 1)
+-- _ -> error $ show $ (d, pos, tile, nextWalk d tile)
 
 -- raycast
 
