@@ -2,7 +2,7 @@ module Day.Day10 (run) where
 
 import Control.Arrow ((>>>))
 import Control.Lens
-import Control.Monad (void)
+import Control.Monad (mfilter, void)
 import Control.Monad.State
 import Data.Either (lefts)
 import Data.List hiding (groupBy)
@@ -16,7 +16,7 @@ import Data.Set qualified as Set
 import Data.Tuple
 import Data.Vector.Internal.Check (checkIndex)
 import Debug.Trace
-import Linear hiding (E)
+import Linear hiding (E, trace)
 import Test.HUnit ((@=?))
 import Text.RawString.QQ (r)
 import Utils
@@ -38,8 +38,9 @@ instance Show Tile where
     Bend SE -> "F"
     Start -> "S"
     Dot -> "."
-    FakeDot -> "?"
-    Block -> "#"
+
+-- FakeDot -> "*"
+-- Block -> "#"
 
 toTile x = case x of
   '|' -> Just $ Pipe Vert
@@ -53,10 +54,13 @@ toTile x = case x of
 
 dirToVec :: (Num a) => Dir -> V2 a
 dirToVec x = case x of
-  N -> V2 0 (-1)
-  E -> V2 1 0
-  W -> V2 (-1) 0
-  S -> V2 0 1
+  N -> V2 0 (-2)
+  E -> V2 2 0
+  W -> V2 (-2) 0
+  S -> V2 0 2
+
+halfDirToVec :: Dir -> V2 Int
+halfDirToVec = fmap (`div` 2) . dirToVec
 
 pattern a :# b = (a, b)
 
@@ -80,172 +84,97 @@ nextWalk d x = case nextWalkMay d x of
   Nothing -> error $ show (d, x)
   Just x -> x
 
--- N :# Start -> undefined
-
--- walk grid startDir startPos = go startDir startPos 0
---  where
---   go d pos c = case grid ! pos of
---     -- x | flip const (d, pos, x, nextWalk d x) (c > 20) -> -10
---     Start | c > 0 -> []
---     tile -> case (nextWalk d tile, tile) of
---       (newDir, Bend _) -> Left pos : go newDir (dirToVec newDir + pos) (c + 1)
---       (newDir, _) -> Right pos : go newDir (dirToVec newDir + pos) (c + 1)
-
--- (Just newDir, _) -> go newDir (dirToVec newDir + pos) (c + 1)
--- _ -> error $ show $ (d, pos, tile, nextWalk d tile)
-
--- shoelace points = abs $ sum (zipWith calc xs ys) * 0.5
---  where
---   calc (x, x1) (y, y1) = (((y + y1) * (x - x1)))
---   ps = (points ++ take 1 points)
---   xs = zipSelf $ map getX ps
---   ys = zipSelf $ map getY ps
-
 parse :: String -> Map.Map (V2 Int) Tile
 parse = parseAsciiMap toTile . unlines . filter (not . null) . lines
 
---
+debug = False
 
--- solveA :: Map.Map (V2 Int) Tile -> _
--- solveA grid = length (walk grid startDir startPos) `div` 2
---  where
---   startPos = id $ fst $ Map.findMin $ Map.filter (== Start) grid
---   startDir = head $ catMaybes $ traceLab "m" $ map (\d -> fmap (nextWalk d) (grid !? (startPos + dirToVec d))) [minBound .. maxBound]
-
----- A
-
--- checkInside :: Map.Map (V2 Int) Tile -> Map.Map (V2 Int) Tile -> (V2 Int) -> _
--- checkInside grid path startPos = odd $ length $ traceOn (\g -> show (startPos, map (concatMap show) g, length g)) $ groupBy grouper $ filter (/= Pipe Hor) $ mapMaybe look points
---  where
---   look (x) = grid !? x
---   points = takeWhile (flip Map.member grid) . iterate (over _x succ) $ startPos
-
--- grouper Dot Dot = True
--- grouper Dot _ = False
--- grouper _ Dot = False
--- -- grouper _ (Pipe Vert) = False
--- grouper _ _ = True
-
--- grouper (Pipe Hor) (Bend _) = True
--- grouper (Bend _) (Pipe Hor) = True
--- grouper (Bend _) Start = True
--- grouper Start (Bend _) = True
-
--- SQUUUEZE
-
--- canReachExitState :: Map.Map (V2 Int) a -> Set (V2 Int) -> V2 Int -> State (Set (V2 Int)) Bool
--- canReachExitState grid path pos =
---   do
---     v <- get
-
--- (FALSES, TURES)
+traceLabD s a = if debug then traceLab s a else a
+traceD s a = if debug then trace s a else a
 
 dirs = [N, S, E, W]
 
-type RInt = Ratio Int
+isOutside g = \x -> x < fst (Map.findMin g) || x > fst (Map.findMax g)
 
-canReachExitState :: Map (V2 RInt) a -> Set (V2 RInt) -> Set (V2 RInt) -> Set (V2 RInt) -> (Set (V2 RInt), Set (V2 RInt))
+canReachExitState :: Map (V2 Int) Tile -> Set (V2 Int) -> Set (V2 Int) -> Set (V2 Int) -> (Set (V2 Int), Set (V2 Int))
 -- canReachExitState grid path vis poses | traceShow ("vis", vis, "poses", poses) False = undefined
-canReachExitState grid path vis poses | Set.null poses = (vis, Set.empty)
-canReachExitState grid path vis poses | any (flip Map.notMember grid) poses = (Set.empty, vis <> poses)
+canReachExitState grid path vis poses
+  | Set.null poses =
+      (vis, Set.empty)
+canReachExitState grid path vis poses
+  | any (isOutside grid) poses =
+      (Set.empty, vis <> poses)
 canReachExitState grid path vis poses = do
   -- let newPoses =  [N, S, E, W]
-  let newVis = vis <> poses
+
+  let newVis = vis <> traceLabD "poses" poses
   let addNew acc newP = if Set.notMember newP path && Set.notMember newP newVis then Set.insert newP acc else acc
 
   -- let q = foldl' addNew poses $ m <$>
-  let newPs = Set.unions $ fmap (\d -> Set.map (dirToVec d +) poses) dirs
+  let newPs = traceLabD "newPs" $ Set.unions $ fmap (\d -> Set.map (halfDirToVec d +) poses) dirs
 
-  let newPoses = traceLab "newposes" $ foldl' addNew Set.empty newPs
+  let newPosesDebug = Set.map (\x -> (x, grid !? x)) $ foldl' addNew Set.empty newPs
+  let newPoses = traceD ("newposes" ++ show newPosesDebug) $ foldl' addNew Set.empty newPs
 
   canReachExitState grid path newVis (newPoses)
 
-halfCombs (V2 xx yy) = tail $ do
-  x <- [0, 1, -1]
-  y <- [0, 1, -1]
-  pure $ V2 (xx + x * 0.5) (yy + y * 0.5)
 
-makeHalfDots k (map halfDirToVec -> blocks) = do
-  n <- halfCombs k
-  pure $ (n, if elem n blocks then Block else FakeDot)
-
-getDots k v = fmap (flip Map.singleton v) $ case v of
-  Bend NE -> makeHalfDots k [N, E]
-  Bend NW -> makeHalfDots k [N, W]
-  Bend SE -> makeHalfDots k [S, E]
-  Bend SW -> makeHalfDots k [S, W]
-  Pipe Hor -> makeHalfDots k [E, W]
-  Pipe Vert -> makeHalfDots k [N, S]
-  Dot -> makeHalfDots k []
-
-fixStart grid = (newGrid, startDir, startPos)
+fixStart (Map.mapKeys (* 2) -> grid) = (newGrid, startDir, startPos)
  where
   startPos = traceShowId $ fst $ Map.findMin $ Map.filter (== Start) grid
-  startDirs = catMaybes $ mapMaybe (\d -> fmap (nextWalkMay d) (grid !? (startPos + dirToVec d))) [minBound .. maxBound]
+  -- startDirs = catMaybes $ mapMaybe (\d -> fmap (nextWalkMay d) (grid !? (startPos + dirToVec d))) [minBound .. maxBound]
+  startDirs = mapMaybe (\d -> d <$ fmap (nextWalkMay d) (mfilter (/= Dot) $ grid !? (startPos + dirToVec d))) [minBound .. maxBound]
 
-  (newGrid, startDir) = case traceLab "startDir" $ sort startDirs of
-    [S, E] -> (Map.insert startPos (Bend SE) grid, S)
-    [S, W] -> (Map.insert startPos (Bend SW) grid, S)
-    [N, W] -> (Map.insert startPos (Bend NW) grid, N)
-    [N, E] -> (Map.insert startPos (Bend NE) grid, N)
-    _ -> error $ show $ sort startDirs
+  (newGrid,startDir) = (Map.insert startPos (Pipe Hor) grid, W)
+  -- (newGrid, startDir) = case sort startDirs of
+  --   [S, E] -> (Map.insert startPos (Bend SE) grid, S)
+  --   [S, W] -> (Map.insert startPos (Bend SW) grid, S)
+  --   [N, W] -> (Map.insert startPos (Bend NW) grid, N)
+  --   [N, E] -> (Map.insert startPos (Bend NE) grid, N)
+  --   _ -> error $ show $ sort startDirs
 
 solveB :: Map.Map (V2 Int) Tile -> _
 solveB (fixStart -> (grid, startDir, startPos)) = do
-  print $ halfCombs (V2 0 0)
-  mprint $ makeHalfDots (V2 0 0) [S, N]
-  printV2Map grid
-  print "QQQ"
-  -- print bends
-  -- print "BEND" >> print bends
-  -- print $ checkInside grid bends (
-  -- print dots
-  -- print "che" >> print (Set.size $ Set.filter (checkInside grid bends) dots)
-  -- print $ length dots
-  -- let res =
-  --       fst $
-  --         foldl'
-  --           ( \(falses, trues) d ->
-  --               if Set.member d falses
-  --                 then (falses, trues)
-  --                 else
-  --                   if Set.member d trues
-  --                     then (falses, trues)
-  --                     else (falses, trues) <> check d
-  --           )
-  --           mempty
-  --           dots
+  -- printV2Map moreGrid
+  -- mprint moreGrid
+  -- printLab "bends" bends
 
-  -- print "bendmap"
-  print "-------------------"
-  print startDir
-  print startPos
-  print "bends" >> print bends
+  let allEnclodesDots =
+        fst $
+          foldl'
+            ( \(falses, trues) d ->
+                if Set.member d falses
+                  then (falses, trues)
+                  else
+                    if Set.member d trues
+                      then (falses, trues)
+                      else (falses, trues) <> check d
+            )
+            mempty
+            dots
+  -- printLab "lengthAll" $ length allEnclodesDots
+  printLab "lengthFilter" $ length $ Set.filter (\(V2 x y) -> mod x 2 == 0 && mod y 2 == 0) $ allEnclodesDots
  where
-  -- printV2Map $ bendMap
+  -- moreGrid = Map.unionsWith combTile $ [grid] ++ Map.foldMapWithKey (\k v -> [getHalfDots k v]) bendsMap
 
-  -- printV2Map $ bendMap <> Map.map (const Dot) grid
+  -- USE CORRECT BENDS
+  check p = canReachExitState grid bendsSet Set.empty (Set.singleton p)
+  dots = traceLabD "Dots" $ Map.keys $ Map.difference grid bendsMap
 
-  -- addHalfDots = Map.foldMapWithKey getDots ratioGrid
-
-  -- ratioGrid = Map.mapKeys (fmap toRational) grid
-
-  -- check p = canReachExitState grid bends Set.empty (Set.singleton p)
-  dots = Map.keys $ grid `Map.difference` (Map.fromList bends)
-
+  bendsSet = Set.fromList . map fst $ Map.toList bendsMap
+  bendsMap = Map.fromList $ map (,()) bends
   bends = walkMod grid startDir startPos
 
-halfDirToVec :: (Fractional a) => Dir -> V2 a
-halfDirToVec = fmap (0.5 *) . dirToVec
+-- _ = zip bendsV2
 
-walkMod grid startDir startPos = go startDir (dirToVec startDir + startPos)
+walkMod grid startDir startPos = (halfDirToVec startDir + startPos) : go startDir (dirToVec startDir + startPos)
  where
   go d pos =
     let tile = grid ! pos
      in case nextWalk d tile of
-          _ | pos == startPos -> [pos :# tile]
+          _ | pos == startPos -> [pos]
           -- x | flip const (d, pos, x, nextWalk d x) (c > 20) -> -10
-          newDir -> (pos, tile) : go newDir (dirToVec newDir + pos)
+          newDir -> (pos) : (halfDirToVec newDir + pos) : go newDir (dirToVec newDir + pos)
 
 -- (Just newDir, p@Pipe{}) -> (p, pos) : go newDir (dirToVec newDir + pos) (c + 1)
 -- (Just newDir, _) -> go newDir (dirToVec newDir + pos) (c + 1)
@@ -256,16 +185,21 @@ walkMod grid startDir startPos = go startDir (dirToVec startDir + startPos)
 -- f
 
 testInput =
-  (!! 1)
+  (!! 5)
     [ [r|
 S-7
 |.|
 L-J|]
-    , [r|.....
+    , [r|
+S7
+||
+LJ|]
+    , [r|
+......
 .S--7.
 .|..|.
 .L7FJ.
-..LJ.|]
+..LJ..|]
     , [r|-L|F7
 7S-7|
 L|7||
@@ -279,6 +213,14 @@ S-------7
 |L-7.F-J|
 |..|.|..|
 L--J.L--J|]
+    , [r|
+S------7
+|F----7|
+||....||
+||....||
+|L-7F-J|
+|..||..|
+L--JL--J|]
     , [r|
 FSF7.
 ||||.
@@ -320,9 +262,11 @@ L--J.L7...LJS7F-7L7.
  L|LJ||||||||||||F--J
  FF7FSF7F7F7F7F7F---7
 -}
+printLab s x = putStr (s ++ " ") >> print x
+
 run :: String -> IO ()
 run input = void $ do
-  input <- putStrLn "#####    testInput   #####" >> pure testInput
+  -- input <- putStrLn "#####    testInput   #####" >> pure testInput
   -- mprint input
   let parsed = parse input
   mprint parsed
