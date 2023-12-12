@@ -22,9 +22,9 @@ run input = void $ do
   input <- putStrLn "#####    testInput   #####" >> pure testInput
   print input
   let parsed = parse input
-  print parsed
+  mprint parsed
   let resA = solveA parsed
-  print resA
+  mprint resA
 
 -- resA @=? 1715
 -- let resB = solveB parsed
