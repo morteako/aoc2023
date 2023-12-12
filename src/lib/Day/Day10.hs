@@ -36,9 +36,6 @@ instance Show Tile where
     Start -> "S"
     Dot -> "."
 
--- FakeDot -> "*"
--- Block -> "#"
-
 toTile x = case x of
   '|' -> Just $ Pipe Vert
   '-' -> Just $ Pipe Hor
