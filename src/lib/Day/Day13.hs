@@ -14,7 +14,7 @@ parse = splitOn "\n\n" >>> fmap (lines)
 splits :: (Int -> RowOrCol) -> [a] -> [(([a], [a]), RowOrCol)]
 splits tag xs = imap (\i -> (,tag $ succ i)) $ init $ zip (tail $ reverse $ tails $ reverse xs) (fmap tail $ tails xs)
 
-data RowOrCol = Row Int | Col Int deriving (Show)
+data RowOrCol = Row !Int | Col !Int deriving (Show)
 
 bothSplits :: [String] -> [(([String], [String]), RowOrCol)]
 bothSplits xs = splits Row xs ++ splits Col (transpose xs)
@@ -34,6 +34,7 @@ sumAfterReflectionPoint smugdes = fmap (getRowOrCol smugdes >>> multM) >>> sum
 run :: String -> IO ()
 run input = do
   let parsed = parse input
+
   let resA = sumAfterReflectionPoint 0 parsed
   print resA
   resA @=? 35210
