@@ -85,6 +85,11 @@ parseAsciiMap f = ifoldMapOf (asciiGrid <. folding f) Map.singleton
     asciiGrid :: IndexedFold (V2 Int) String Char
     asciiGrid = reindexed (uncurry (flip V2)) (lined <.> folded)
 
+-- printing
+
+printlab :: (Show a) => [Char] -> a -> IO ()
+printlab s a = putStr (s ++ " ") >> print a
+
 class Print a where
     mprint :: a -> IO ()
 
