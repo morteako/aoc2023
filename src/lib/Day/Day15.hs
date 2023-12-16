@@ -4,7 +4,7 @@ import Control.Arrow ((>>>))
 import Control.Monad (void)
 
 import Data.Char (ord)
-import Data.Foldable (Foldable (foldl', toList))
+import Data.Foldable (Foldable (foldl'))
 import Data.IntMap qualified as Map
 import Data.List.Split (splitOn)
 import Data.Map.Ordered (OMap)
@@ -42,7 +42,7 @@ insertLens m (Equals lab focal) =
 solveB :: [(a, LabeledLens)] -> Int
 solveB = sum . Map.foldMapWithKey (\k v -> map (* (k + 1)) v) . indexedOrder . foldl' insertLens Map.empty . map snd
  where
-  indexedOrder = fmap (zipWith (*) [1 ..] . reverse . toList)
+  indexedOrder = fmap (zipWith (*) [1 ..] . reverse . fmap snd . OMap.assocs)
 
   calc (i, (a, b)) = i * a * b
 
