@@ -5,11 +5,13 @@ import Control.Arrow ((>>>))
 import Control.Monad (void)
 import Control.Monad.State
 import Data.Foldable
-import Data.Map
-import Data.Map qualified as Map
+
+import Data.Map qualified as Map hiding (filter)
 import Data.Semigroup
-import Data.Set
-import Data.Set qualified as Set
+
+import Data.Map (Map)
+import Data.Set (Set)
+import Data.Set qualified as Set hiding (filter)
 import Data.Traversable
 import Linear hiding (E)
 import Test.HUnit ((@=?))
@@ -91,53 +93,50 @@ solveA :: Grid -> _
 solveA grid = Set.size $ Set.map fst $ flip execState mempty $ doMoves grid (V2 0 0) E
 
 edgesAndDirs :: Grid -> _
-edgesAndDirs grid = (x, xx, y, yy)
+edgesAndDirs grid =
+  fi (\(V2 x y) -> x == mx) E
+    ++ fi (\(V2 x y) -> x == mxx) W
+    ++ fi (\(V2 x y) -> y == my) S
+    ++ fi (\(V2 x y) -> y == myy) N
  where
-  (Min x, Max xx, Min y, Max yy) = Map.foldMapWithKey (\(V2 x y) _ -> (Min x, Max x, Min y, Max y)) grid
+  fi p dir = map (,dir) $ filter p $ Map.keys grid
+  (Min mx, Max mxx, Min my, Max myy) = Map.foldMapWithKey (\(V2 x y) _ -> (Min x, Max x, Min y, Max y)) grid
 
-solveB grid = es
+doEdgeMoves ::
+  Map (V2 Int) Tile ->
+  Set (V2 Int) ->
+  V2 Int ->
+  Dir ->
+  State (Map (V2 Int, Dir) (Set (V2 Int))) (Set (V2 Int))
+doEdgeMoves grid curs curPos dir = case Map.lookup curPos grid of
+  Nothing -> pure curs
+  Just t -> do
+    seen <- get
+    case Map.lookup (curPos, dir) seen of
+      Nothing -> do
+        modify (Map.insertWith (<>) (curPos, dir) curs)
+        let ds = move t dir
+        reaches <- for ds $ \d -> doEdgeMoves grid (Set.insert (dirToVec d + curPos) curs) (dirToVec d + curPos) d
+        pure $ Set.unions reaches
+      Just canReach -> do
+        let news = (canReach <> curs)
+        modify (Map.insert (curPos, dir) news)
+        pure news
+
+solveB grid =
+  maximum
+    . map (Set.size . Set.map fst)
+    $ flip map es
+    $ flip execState mempty . uncurry (doMoves grid)
  where
   es = edgesAndDirs grid
 
-testInput =
-  [r|.|...\....
-|.-.\.....
-.....|-...
-........|.
-..........
-.........\
-..../.\\..
-.-.-/..|..
-.|....-|.\
-..//.|....|]
-
--- >|<<<\....
-
-{-
- |v-.\^....
- .v...|->>>
- .v...v^.|.
- .v...v^...
- .v...v^..\
- .v../2\\..
- <->-/vv|..
- .|<<<2-|.\
- .v//.|.v..
--}
 run :: String -> IO ()
-run input = void $ do
-  -- input <- putStrLn "#####    testInput   #####" >> pure testInput
-  -- print input
+run input = do
   let parsed = parse input
-  -- mprint parsed
-  -- printV2Map parsed
   let resA = solveA parsed
   print resA
-
--- print $ move (V2 7 6) ,N,[W]
--- print 1
-
--- resA @=? 1715
--- let resB = solveB parsed
--- print resB
--- resB @=? 1739
+  resA @=? 8098
+  let resB = solveB parsed
+  print resB
+  resB @=? 8335
