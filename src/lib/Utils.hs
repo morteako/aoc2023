@@ -12,7 +12,7 @@ import Data.Foldable (Foldable (foldl'))
 import Data.Kind
 import Data.List.Extra hiding (foldl1')
 import Data.Map (Map)
-import Data.Map.Strict qualified as Map
+import Data.Map qualified as Map
 import Data.Maybe (fromMaybe)
 import Data.Semigroup (Sum (Sum, getSum))
 import Debug.Trace
