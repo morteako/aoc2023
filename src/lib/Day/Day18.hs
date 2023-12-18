@@ -3,10 +3,10 @@ module Day.Day18 (run) where
 import Control.Arrow ((>>>))
 import Control.Lens
 import Data.Char (digitToInt)
+import Data.Foldable.Extra (sumOn')
 import Linear hiding (E)
 import Numeric (readHex)
 import Test.HUnit ((@=?))
-import Utils
 
 data Dir = U | D | L | R deriving (Show, Eq, Ord, Enum, Bounded, Read)
 
@@ -20,12 +20,9 @@ dirToVec x = case x of
 parse :: String -> [((Dir, Int), (Dir, Int))]
 parse = lines >>> map (words >>> f)
  where
-  f [d, i, hash] = ((read @Dir d, readInt i), decode hash)
+  f [d, i, hash] = ((read d, read i), decode hash)
 
-corners :: [(Dir, Int)] -> [V2 Int]
-corners = scanl (+) 0 . map (\(dir, i) -> dirToVec dir * fromIntegral i)
-
-decode :: (Eq b, Num b) => [Char] -> (Dir, b)
+decode :: [Char] -> (Dir, Int)
 decode (init -> tail -> '#' : s) = (dir, meters)
  where
   meters = fst $ head $ readHex (take 5 s)
@@ -35,11 +32,11 @@ decode (init -> tail -> '#' : s) = (dir, meters)
     2 -> L
     3 -> U
 
-solveA :: [(Dir, Int)] -> Int
-solveA cmds = shoelaceWithCircum cornersLen path
+getArea :: [(Dir, Int)] -> Int
+getArea cmds = shoelaceWithCircum cornersLen (corners cmds)
  where
-  cornersLen = sum $ map (\(dir, i) -> i) cmds
-  path = corners cmds
+  cornersLen = sumOn' snd cmds
+  corners = scanl (+) 0 . map (\(dir, i) -> dirToVec dir * fromIntegral i)
 
 shoelaceWithCircum :: Int -> [V2 Int] -> Int
 shoelaceWithCircum circumference w = div (fromIntegral (down - up)) 2 + div circumference 2 + 1
@@ -52,9 +49,9 @@ shoelaceWithCircum circumference w = div (fromIntegral (down - up)) 2 + div circ
 run :: String -> IO ()
 run input = do
   let parsed = parse input
-  let resA = solveA (map fst parsed)
+  let resA = getArea (map fst parsed)
   print resA
   resA @=? 58550
-  let resB = solveA (map snd parsed)
+  let resB = getArea (map snd parsed)
   print resB
   resB @=? 47452118468566
