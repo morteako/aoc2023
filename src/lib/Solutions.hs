@@ -44,5 +44,5 @@ solutions =
     , "15" =: Day.Day15.run
     , "16" =: Day.Day16.run
     , "17" =: Day.Day17.run
-    , "18" =: Day.Day18.run
+    -- , "18" =: Day.Day18.run
     ]

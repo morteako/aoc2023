@@ -63,6 +63,8 @@ dependencies:
   - lattices
   - raw-strings-qq
   - IntervalMap
+  - astar
+  - hashable
 
 library:
   source-dirs: src/lib

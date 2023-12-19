@@ -67,6 +67,7 @@ library
       HUnit
     , IntervalMap
     , array
+    , astar
     , base >=4.14 && <5
     , bytestring
     , comonad
@@ -75,6 +76,7 @@ library
     , extra
     , fgl
     , groupBy
+    , hashable
     , haskell-src-meta
     , lattices
     , lens
@@ -127,6 +129,7 @@ executable app
     , IntervalMap
     , aoc2023
     , array
+    , astar
     , base >=4.14 && <5
     , bytestring
     , comonad
@@ -136,6 +139,7 @@ executable app
     , extra
     , fgl
     , groupBy
+    , hashable
     , haskell-src-meta
     , http-conduit
     , lattices
