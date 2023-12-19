@@ -67,8 +67,8 @@ makeGraph xs = (mkGraph @Gr lnodes ledges, 0, Set.size nodes - 1, fromInd)
   getInd = flip Set.findIndex nodes
   fromInd = flip Set.elemAt nodes
 
-getRowsAndColumns :: [[(V2 Int, Int)]] -> [((V2 Int, V2 Int), Int)]
-getRowsAndColumns xs = Map.toList $ Map.fromList $ do
+getRowsAndColumns :: _ -> [[(V2 Int, Int)]] -> [((V2 Int, V2 Int), Int)]
+getRowsAndColumns goal xs = Map.toList $ Map.fromList $ do
   let rs = concatMap getRow xs ++ concatMap getRow (map reverse xs)
   let trans = transpose xs
   let cs = concatMap getRow trans ++ concatMap getRow (map reverse trans)
@@ -78,6 +78,8 @@ getRowsAndColumns xs = Map.toList $ Map.fromList $ do
   if
     -- \| ra == ca -> [((rb, cb), cost), ((cb, rb), cost)]
     | rb == ca -> [((ra, cb), cost)]
+    | rb == goal -> [((ra, rb), rcost)]
+    | cb == goal -> [((ca, cb), ccost)]
     -- ADD CASE? or safe
     | otherwise -> []
 
@@ -87,13 +89,17 @@ getRow :: [(V2 Int, Int)] -> [(V2 Int, V2 Int, Int)]
 getRow = id . coerce . concatMap f . tails . map toMon
  where
   f [] = []
-  f xs@((Last x, _) : _) = map (\(l, c) -> (x, l, c)) . scanl1 (<>) . drop 1 . take 4 $ xs
+  f xs@((Last x, _) : _) = map (\(l, c) -> (x, l, c)) . drop 3 . scanl1 (<>) . drop 1 . take 11 $ xs
 
 solveA grid = do
   -- print grid
   -- printlab "row" $ getRow $ map (\x -> (V2 x x, x)) [1, 2, 3, 4, 5, 6]
+  let t = fst $ last $ last grid
   print "-------"
-  let alls = getRowsAndColumns grid
+  print t
+  print "-------"
+
+  let alls = getRowsAndColumns t grid
   print $ length alls
 
   let (graph, start, end, fromInd) = makeGraph alls
@@ -117,8 +123,11 @@ solveB = id
 -- [(V2 0 0, V2 0 1, 1)]
 
 testInput =
-  [r|11111
-11119|]
+  [r|111111111111
+999999999991
+999999999991
+999999999991
+999999999991|]
 
 testInputOrg =
   [r|2413432311323
@@ -183,7 +192,7 @@ testInputOrg =
 
 run :: String -> IO ()
 run input = void $ do
-  -- input <- putStrLn "#####    testInput   #####" >> pure testInputOrg
+  input <- putStrLn "#####    testInput   #####" >> pure testInput
   -- print input
   let grid = parseAsciiMap (Just . digitToInt) input
   -- printV2Map $ fmap show grid
@@ -196,6 +205,8 @@ run input = void $ do
 
   let resA = solveA parsed
   resA
+  let p = [V2 0 0, V2 8 5, V2 18 1, V2 27 5, V2 35 1, V2 45 5, V2 50 0, V2 59 4, V2 69 0, V2 78 4, V2 86 0, V2 96 4, V2 106 9, V2 114 13, V2 122 17, V2 126 24, V2 132 34, V2 136 44, V2 140 54, V2 136 63, V2 132 72, V2 136 82, V2 140 92, V2 136 100, V2 140 110, V2 136 120, V2 140 130, V2 140 140]
+  print $ zipWith (-) p (tail p)
 
 -- printFasit
 
