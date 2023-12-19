@@ -64,7 +64,7 @@ getDirs (Allowed d i) =
 
 type St = State Int
 
-doAstar grid = aStarM @St _graph _dist _heur _goal (pure $ (0, Allowed E 0))
+doAstar grid = aStar _graph _dist _heur _goal (0, Allowed E 0)
  where
   inGrid = (flip Map.member grid)
   (ma, _) = Map.findMax grid
@@ -74,11 +74,11 @@ doAstar grid = aStarM @St _graph _dist _heur _goal (pure $ (0, Allowed E 0))
       (a, b) = turn d
       xs = (if i >= 3 then [] else [Allowed d (i + 1)]) ++ [Allowed a 1, Allowed b 1]
      in
-      pure $ HashSet.fromList $ filter (inGrid . fst) $ map (\al -> (al ..+ curPos, al)) xs
+      HashSet.fromList $ filter (inGrid . fst) $ map (\al -> (al ..+ curPos, al)) xs
 
-  _goal (curPos, _) = pure (curPos == ma)
-  _dist _ (curPos, _) = pure $ grid Map.! curPos
-  _heur _ = pure 0
+  _goal (curPos, _) = (curPos == ma)
+  _dist _ (curPos, _) = grid Map.! curPos
+  _heur _ = 0
 
 dtraceShow s a = if debug then traceShow s a else a
 dtraceLab s a = if debug then traceLab s a else a
@@ -88,7 +88,7 @@ debug = False
 solveA grid = do
   print "solveA"
   let a = doAstar grid
-  let (Just p, _) = flip runState 0 a
+  let Just p = a
   -- print $ r
   print $ sum $ map (grid Map.!) $ map fst p
   -- print $ flip runState mempty $ findMin grid
