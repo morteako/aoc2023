@@ -1,31 +1,22 @@
 module Day.Day17 (run) where
 
-import Control.Arrow ((>>>))
-import Control.Lens
-import Control.Monad (guard, void)
-import Control.Monad.State
 import Data.Char
-import Data.Coerce
-import Data.Foldable
-import Data.Graph.AStar
-import Data.Graph.Inductive (Gr, Graph (isEmpty, mkGraph), sp, spLength)
+import Data.Graph.AStar (aStar)
+import Data.Graph.Inductive (Gr, Graph (isEmpty, mkGraph), neighbors, sp, spLength)
 import Data.HashSet qualified as HashSet
 import Data.Hashable
 import Data.List.Extra
 import Data.Map (Map)
 import Data.Map qualified as Map
-import Data.Maybe (catMaybes, mapMaybe)
+import Data.Maybe (catMaybes, fromJust, mapMaybe)
 import Data.Semigroup
 import Data.Semigroup qualified as Semigroup
 import Data.Set (Set)
 import Data.Set qualified as Set hiding (fold)
 import Data.Tuple.Extra (fst3, snd3)
-import Debug.Trace
 import GHC.Generics
-import GHC.Records
 import Linear (V2 (..))
 import Test.HUnit ((@=?))
-import Text.RawString.QQ (r)
 import Utils
 
 parse :: String -> _
@@ -54,102 +45,71 @@ turn S = (W, E)
 turn W = (S, N)
 turn E = (S, N)
 
-getDirs :: DirC -> [DirC]
-getDirs (Allowed d i) =
-  let
-    (a, b) = turn d
-    xs = [Allowed a 1, Allowed b 1]
-   in
-    (if i >= 3 then xs else (Allowed d (i + 1)) : xs)
-
-type St = State Int
-
-doAstar grid = aStar _graph _dist _heur _goal (0, Allowed E 0)
- where
-  inGrid = (flip Map.member grid)
-  (ma, _) = Map.findMax grid
-
-  _graph (curPos, Allowed d i) = do
-    let
-      (a, b) = turn d
-      xs = (if i >= 3 then [] else [Allowed d (i + 1)]) ++ [Allowed a 1, Allowed b 1]
-     in
-      HashSet.fromList $ filter (inGrid . fst) $ map (\al -> (al ..+ curPos, al)) xs
-
-  _goal (curPos, _) = (curPos == ma)
-  _dist _ (curPos, _) = grid Map.! curPos
-  _heur _ = 0
-
-dtraceShow s a = if debug then traceShow s a else a
-dtraceLab s a = if debug then traceLab s a else a
-
-debug = False
-
 solveA grid = do
-  print "solveA"
-  let a = doAstar grid
-  let Just p = a
   -- print $ r
-  print $ sum $ map (grid Map.!) $ map fst p
-  -- print $ flip runState mempty $ findMin grid
+  sum $ map (grid Map.!) $ map fst $ fromJust $ doAstar grid
  where
+  doAstar grid = aStar neighbors dist heur isGoal (0, Allowed E 0)
+   where
+    inGrid = (flip Map.member grid)
+    (ma, _) = Map.findMax grid
 
-solveB = id
+    neighbors (curPos, Allowed d i) =
+      let
+        (a, b) = turn d
+        xs = (if i >= 3 then [] else [Allowed d (i + 1)]) ++ [Allowed a 1, Allowed b 1]
+       in
+        HashSet.fromList $ filter (inGrid . fst) $ map (\al -> (al ..+ curPos, al)) xs
 
--- [(V2 0 0, V2 0 1, 1)]
+    isGoal (curPos, _) = (curPos == ma)
+    dist _ (curPos, _) = grid Map.! curPos
+    heur _ = 0
 
-testInput =
-  [r|11
-11|]
+solveB grid = do
+  sum $ map getPathSum $ fromJust $ doAstar grid
+ where
+  getPathSum (curPos, acc, Allowed _ 4) = acc
+  getPathSum (curPos, acc, Allowed d i) = grid Map.! curPos
 
-testInputOrg =
-  [r|2413432311323
-3215453535623
-3255245654254
-3446585845452
-4546657867536
-1438598798454
-4457876987766
-3637877979653
-4654967986887
-4564679986453
-1224686865563
-2546548887735
-4322674655533
-|]
+  sum4 curPos d =
+    case (take 4 . tail $ iterate (d .+) curPos) of
+      ps -> case traverse (grid Map.!?) ps of
+        Nothing -> Nothing
+        Just xs -> Just (last ps, sum xs, Allowed d 4)
+
+  inGrid = (flip Map.member grid)
+
+  doAstar grid = aStar neighbors dist heur isGoal (0, 0, Allowed E 0)
+   where
+    (ma, _) = Map.findMax grid
+
+    neighbors (curPos, acc, Allowed _ 0) =
+      HashSet.fromList $ mapMaybe (sum4 curPos) [S, E]
+    neighbors (curPos, acc, Allowed d i) =
+      let
+        (a, b) = turn d
+        n = d .+ curPos
+        next = if i >= 10 || not (inGrid n) then [] else [(n, acc + grid Map.! n, Allowed d (i + 1))]
+
+        qs = next ++ mapMaybe (sum4 curPos) [a, b]
+       in
+        HashSet.fromList qs
+
+    isGoal (curPos, _, _) = (curPos == ma)
+
+    dist _ (curPos, acc, Allowed d 4) = acc
+    dist _ (curPos, acc, Allowed d _) = grid Map.! curPos
+
+    heur _ = 0
 
 run :: String -> IO ()
-run input = void $ do
-  -- input <- putStrLn "#####    testInput   #####" >> pure testInputOrg
-  -- print input
-  let grid = parseAsciiMap (Just . digitToInt) input
-  -- printV2Map $ fmap show grid
-  -- print "--------"
-  -- let p = [V2 0 0, V2 2 1, V2 5 0, V2 8 1, V2 9 2, V2 10 4, V2 11 7, V2 12 10, V2 11 11, V2 12 12]
-  -- printV2Map $ Map.mapWithKey (\k v -> if elem k p then "." else show v) grid
-
+run input = do
   let parsed = parse input
 
-  printV2Map parsed
+  let resA = solveA parsed
+  print resA
+  resA @=? resA
 
-  solveA parsed
-
--- print $ concatMap getDirs $ concatMap getDirs $ getDirs (Allowed S 0)
-
--- mapM_ print parsed
-
--- let resA = solveA parsed
--- resA
--- let p = [V2 0 0, V2 8 5, V2 18 1, V2 27 5, V2 35 1, V2 45 5, V2 50 0, V2 59 4, V2 69 0, V2 78 4, V2 86 0, V2 96 4, V2 106 9, V2 114 13, V2 122 17, V2 126 24, V2 132 34, V2 136 44, V2 140 54, V2 136 63, V2 132 72, V2 136 82, V2 140 92, V2 136 100, V2 140 110, V2 136 120, V2 140 130, V2 140 140]
--- print $ zipWith (-) p (tail p)
-
--- printFasit
-
--- print "hopp"
-
--- print $ fold [Just (Min 1), Nothing]
-
--- resA @=? 1715
--- let resB = solveB parsed
--- print resB
--- resB @=? 1739
+  let resB = solveB parsed
+  print resB
+  resB @=? 980
