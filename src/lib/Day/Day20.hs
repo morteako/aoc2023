@@ -6,6 +6,7 @@ import Control.Monad (guard, replicateM, void)
 import Control.Monad.State
 import Data.Either (partitionEithers)
 import Data.Foldable
+import Data.List
 import Data.List.Extra hiding ((!?))
 import Data.Map (Map, (!), (!?))
 import Data.Map qualified as Map
@@ -52,7 +53,7 @@ instance Show Signal where
 pattern Low = False
 pattern High = True
 
-data Sta = On | Off deriving (Show)
+data Sta = On | Off deriving (Show, Eq)
 
 toggle On = Off
 toggle Off = On
@@ -69,35 +70,107 @@ type Counter = (Int, Int)
 
 traceLax s a = a
 
+-- TESTE ALL ON?
+
 -- sendPuls :: [Signal] -> State (Map String (Switch, [String]), Counter) ()
-sendPuls (traceLax "sigs" -> []) = pure ()
+sendPuls (traceLax "sigs" -> []) = pure False
+sendPuls (Signal from s "rx" : curs) = error $ show s
+-- sendPuls (Signal from s "xt" : curs) = traceShow ("\n\n\n", s, from) $ pure $ True
+sendPuls (Signal "xt" s t : curs) = error t
+-- sendPuls (Signal from s t : curs) | elem t targets || elem from targets = do
+--   others <- sendPuls curs
+--   pure (from : others)
 sendPuls (Signal from b to : curs) = do
-  addToState b
-  m <- gets fst
+  m <- get
   case m !? to of
     Nothing -> sendPuls curs
     Just x -> case x of
       (Flip _, _) | b == High -> sendPuls curs
       (Flip (toggle -> fs), nexts) -> do
-        modifying _1 (Map.insert to (Flip fs, nexts))
+        modify (Map.insert to (Flip fs, nexts))
         sendPuls (curs ++ fmap (Signal to $ toBool fs) nexts)
       (Conj lows, nexts) -> do
         -- _ <- traceShow (b,lows) $ pure ()
         let lows' = case b of
               High -> Set.delete from lows
               Low -> Set.insert from lows
-        modifying _1 (Map.insert to (Conj lows', nexts))
+        modify (Map.insert to (Conj lows', nexts))
         let newSig = not $ Set.null lows'
         -- _ <- traceShow ("newSIg", newSig, from, to, b, lows, lows') $ pure ()
         sendPuls (curs ++ fmap (Signal to newSig) nexts)
 
--- Flip-flop modules (prefix %) are either on or off; they are initially off. If a flip-flop module receives a high pulse, it is ignored and nothing happens. However, if a flip-flop module receives a low pulse, it flips between on and off. If it was off, it turns on and sends a high pulse. If it was on, it turns off and sends a low pulse.
+isConj (Conj _) = True
+isConj (Flip _) = False
 
--- Conjunction modules (prefix &) remember the type of the most recent pulse received from each of their connected input modules; they initially default to remembering a low pulse for each input. When a pulse is received, the conjunction module first updates its memory for that input. Then, if it remembers high pulses for all inputs, it sends a low pulse; otherwise, it sends a high pulse.
+targets = ["lk" :: String, "zv", "xt", "sp"]
 
-data Switch = Flip !Sta | Conj !(Set String) deriving (Show)
+getPath g c vis | elem c vis = vis
+getPath g c vis | elem c targets = c : vis
+getPath g c vis = foldl' (\v ca -> getPath g ca v) (c : vis) (g ! c)
 
-solveA (Stuff starts m) = productOf each $ snd $ snd $ flip runState (m, (0, 0)) $ replicateM 1000 (addToState Low >> sendPuls starts)
+data Switch = Flip !Sta | Conj !(Set String) deriving (Eq)
+
+instance Show Switch where
+  show (Flip On) = "on"
+  show (Flip Off) = "off"
+  show (Conj x) = if Set.null x then "HIGHS" else "somelow"
+
+solveA (Stuff starts m) = do
+  let paths = map (\(Signal f _ x) -> reverse $ getPath (Map.map snd m) x mempty) starts
+  mprint paths
+
+  -- print $
+  --   snd $
+  --     flip
+  --       runState
+  --       m
+  --       (replicateM 10000000 (sendPuls starts >> get))
+
+  -- for_ paths $ \p -> do
+  --   let p1 = p
+  --   -- printlab "p" p
+  --   let newM = Map.filterWithKey (\x _ -> elem x p1) m
+  --   -- let clean (sigs, Map.map fst -> mm) = map (map (\(Signal from b to) -> ("from", from, mm ! from, "to", to, mm ! to))) sigs
+
+  --   -- print $ foldl1 lcm $ map succ [1881, 2003, 1719, 1775]
+  --   mprint $
+  --     -- sum $
+  --     -- map head $
+  --     map snd $
+  --       -- filter (\(x, y) -> elem "sp" $ snd $ m ! x) $
+  --       init $
+  --         sortOn snd
+  --         -- \$ sortOn
+  --         --   (flip elemIndex p1 . fst)
+  --         $
+  --           Map.toList $
+  --             Map.map (fmap length . drop 2 . take 4 . group) $
+  --               Map.unionsWith (++) $
+  --                 map (Map.map $ (: []) . fst) $
+  --                   fst $
+  --                     flip
+  --                       runState
+  --                       newM
+  --                       (replicateM 10000 (sendPuls starts >> get))
+
+  -- print p1
+
+  printlab "length" $
+    -- length $
+    length $
+      filter id $
+        take 100000 $
+          fst $
+            flip
+              runState
+              m
+              (replicateM 10000000 (sendPuls starts))
+
+-- mprint $ map (Map.map fst . Map.filterWithKey (\k _ -> elem k p1)) $ fst $ flip runState m $ replicateM 100 (sendPuls starts >> get)
+-- let fm =
+
+-- let parts = flip map starts (\(Signal _ _ to) -> Set.insert to $ getPath (Map.map snd m) to mempty)
+-- mprint $ parts
 
 solveB = id
 
@@ -127,7 +200,7 @@ run input = void $ do
   print "--------"
 
   let resA = solveA parsed
-  mprint resA
+  resA
 
 -- resA @=? 1715
 -- let resB = solveB parsed
