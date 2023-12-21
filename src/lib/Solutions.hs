@@ -21,6 +21,7 @@ import Day.Day16 qualified
 import Day.Day17 qualified
 import Day.Day18 qualified
 import Day.Day20 qualified
+import Day.Day21 qualified
 
 import DayVersion
 import Utils ((=:))
@@ -47,4 +48,5 @@ solutions =
     , "17" =: Day.Day17.run
     , "18" =: Day.Day18.run
     , "20" =: Day.Day20.run
+    , "21" =: Day.Day21.run
     ]
