@@ -71,6 +71,9 @@ solveA labeledIntervals = do
   -- printlab "labsizes" labSizes
   let cantBeMoved = Set.unions $ filter (\x -> Set.size x <= 1) $ map (flip checkRemove moved) $ Set.toList labs
   print $ Set.size labs - Set.size cantBeMoved
+
+  let deps = Map.fromList $ map (\l -> (l, checkRemove l moved)) $ Set.toList labs
+  mprint deps
  where
   -- printlab "moop" $ checkRemove 'c' moved
 
@@ -82,8 +85,6 @@ solveA labeledIntervals = do
   grid = Map.fromListWith undefined $ concatMap (\(lab, ps) -> map (,lab) ps) labeledPoints
 
   labs = Set.fromList $ map fst labeledIntervals
-
-  labSizes = ifoldMap (\k v -> Set.singleton (k, v)) $ Map.fromListWith (+) $ foldMap (\v -> [(v, 1 :: Int)]) grid
 
 checkRemove lab grid =
   Set.filter (/= lab) $
@@ -141,7 +142,7 @@ testInput =
 
 run :: String -> IO ()
 run input = void $ do
-  -- input <- putStrLn "#####    testInput   #####" >> pure testInput
+  input <- putStrLn "#####    testInput   #####" >> pure testInput
   print input
   let parsed = parse input
   mprint parsed
